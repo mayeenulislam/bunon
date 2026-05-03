@@ -1,0 +1,697 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ERD রেন্ডারার</title>
+<link rel="stylesheet" href="https://unpkg.com/lucide-static@latest/font/lucide.min.css">
+<style>
+@font-face {
+    font-family: 'Kohinoor Bangla';
+    src: local('Kohinoor Bangla Regular'), local('KohinoorBangla-Regular'),
+         url('fonts/KohinoorBangla-Regular.eot');
+    src: local('Kohinoor Bangla Regular'), local('KohinoorBangla-Regular'),
+         url('fonts/KohinoorBangla-Regular.eot?#iefix') format('embedded-opentype'),
+         url('fonts/KohinoorBangla-Regular.woff2') format('woff2'),
+         url('fonts/KohinoorBangla-Regular.woff') format('woff'),
+         url('fonts/KohinoorBangla-Regular.ttf') format('truetype');
+    font-weight: normal;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Kohinoor Bangla';
+    src: local('Kohinoor Bangla Bold'), local('KohinoorBangla-Bold'),
+         url('fonts/KohinoorBangla-Bold.eot');
+    src: local('Kohinoor Bangla Bold'), local('KohinoorBangla-Bold'),
+         url('fonts/KohinoorBangla-Bold.eot?#iefix') format('embedded-opentype'),
+         url('fonts/KohinoorBangla-Bold.woff2') format('woff2'),
+         url('fonts/KohinoorBangla-Bold.woff') format('woff'),
+         url('fonts/KohinoorBangla-Bold.ttf') format('truetype');
+    font-weight: bold;
+    font-style: normal;
+    font-display: swap;
+}
+
+:root {
+    --bg: #0f1117;
+    --surface: #1a1b26;
+    --border: #2a2b3d;
+    --text: #e0e0e0;
+    --text-dim: #8888a0;
+    --accent: #7c3aed;
+    --accent-hover: #6d28d9;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+    font-family: 'Kohinoor Bangla', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    height: 100vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Toolbar */
+.toolbar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+    flex-wrap: wrap;
+}
+
+.toolbar h1 {
+    font-size: 14px;
+    font-weight: bold;
+    margin-right: auto;
+    color: var(--accent);
+}
+
+.btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--surface);
+    color: var(--text);
+    font-family: inherit;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+.btn:hover { background: #2a2b3d; border-color: var(--accent); }
+.btn.accent { background: var(--accent); border-color: var(--accent); }
+.btn.accent:hover { background: var(--accent-hover); }
+
+.zoom-info {
+    font-size: 12px;
+    color: var(--text-dim);
+    min-width: 45px;
+    text-align: center;
+}
+
+/* Main Layout */
+.main {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+}
+
+/* Editor Panel */
+.editor-panel {
+    width: 33.333%;
+    min-width: 300px;
+    display: flex;
+    flex-direction: column;
+    border-right: 1px solid var(--border);
+    background: var(--surface);
+}
+
+.editor-header {
+    padding: 8px 12px;
+    font-size: 12px;
+    font-weight: bold;
+    color: var(--text-dim);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+#editor {
+    flex: 1;
+    padding: 12px;
+    background: transparent;
+    color: var(--text);
+    border: none;
+    outline: none;
+    resize: none;
+    font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
+    font-size: 13px;
+    line-height: 1.6;
+    tab-size: 2;
+}
+
+#editor::placeholder { color: var(--text-dim); }
+
+/* Canvas Panel */
+.canvas-panel {
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+    background: var(--bg);
+    background-image: radial-gradient(circle, #2a2b3d 1px, transparent 1px);
+    background-size: 20px 20px;
+}
+
+#canvas-container {
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    position: relative;
+}
+
+#canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 4000px;
+    height: 3000px;
+    transform-origin: 0 0;
+}
+
+/* Entity Node */
+.entity {
+    position: absolute;
+    min-width: 220px;
+    background: var(--surface);
+    border: 2px solid var(--entity-color, #7c3aed);
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.3);
+}
+
+.entity-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 14px;
+    background: var(--entity-bg, rgba(124, 58, 237, 0.1));
+    border-bottom: 1px solid var(--entity-color, #7c3aed);
+}
+
+.entity-icon {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+}
+
+.entity-name {
+    font-weight: bold;
+    font-size: 13px;
+    color: var(--entity-color, #7c3aed);
+}
+
+.entity-fields {
+    padding: 6px 0;
+}
+
+.field {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 14px;
+    font-size: 12px;
+    font-family: 'Menlo', monospace;
+}
+
+.field.pk { color: #f59e0b; }
+.field .pk-badge {
+    font-size: 9px;
+    background: rgba(245, 158, 11, 0.2);
+    color: #f59e0b;
+    padding: 1px 5px;
+    border-radius: 3px;
+    font-weight: bold;
+}
+
+.field-type {
+    color: var(--text-dim);
+    margin-left: auto;
+    font-size: 11px;
+}
+
+/* Relationship Lines */
+.relationship-line {
+    position: absolute;
+    pointer-events: none;
+    z-index: 1;
+}
+
+.relationship-line line {
+    stroke: #8888a0;
+    stroke-width: 1.5;
+    fill: none;
+}
+
+.relationship-line .arrow-marker {
+    fill: #8888a0;
+}
+
+/* Color palette for entities */
+.entity[data-color="blue"] { --entity-color: #3b82f6; --entity-bg: rgba(59, 130, 246, 0.08); }
+.entity[data-color="green"] { --entity-color: #22c55e; --entity-bg: rgba(34, 197, 94, 0.08); }
+.entity[data-color="red"] { --entity-color: #ef4444; --entity-bg: rgba(239, 68, 68, 0.08); }
+.entity[data-color="yellow"] { --entity-color: #eab308; --entity-bg: rgba(234, 179, 8, 0.08); }
+.entity[data-color="purple"] { --entity-color: #a855f7; --entity-bg: rgba(168, 85, 247, 0.08); }
+.entity[data-color="orange"] { --entity-color: #f97316; --entity-bg: rgba(249, 115, 22, 0.08); }
+.entity[data-color="pink"] { --entity-color: #ec4899; --entity-bg: rgba(236, 72, 153, 0.08); }
+.entity[data-color="teal"] { --entity-color: #14b8a6; --entity-bg: rgba(20, 184, 166, 0.08); }
+
+/* Icon definitions using SVG data URIs and Lucide-like icons */
+.icon-user { content: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2'/%3E%3Ccircle cx='12' cy='7' r='4'/%3E%3C/svg%3E"); }
+.icon-users { content: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2'/%3E%3Ccircle cx='9' cy='7' r='4'/%3E%3Cpath d='M22 21v-2a4 4 0 0 0-3-3.87'/%3E%3Cpath d='M16 3.13a4 4 0 0 1 0 7.75'/%3E%3C/svg%3E"); }
+.icon-home { content: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z'/%3E%3Cpolyline points='9 22 9 12 15 12 15 22'/%3E%3C/svg%3E"); }
+.icon-folder { content: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z'/%3E%3C/svg%3E"); }
+.icon-message-circle { content: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5Z'/%3E%3C/svg%3E"); }
+.icon-mail { content: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect width='20' height='16' x='2' y='4' rx='2'/%3E%3Cpath d='m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7'/%3E%3C/svg%3E"); }
+
+/* SVG icon helper */
+.icon-svg {
+    display: inline-block;
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .main { flex-direction: column; }
+    .editor-panel { width: 100%; min-width: auto; height: 40%; border-right: none; border-bottom: 1px solid var(--border); }
+}
+</style>
+</head>
+<body>
+
+<div class="toolbar">
+    <h1>🗃️ ERD রেন্ডারার</h1>
+    <button class="btn" onclick="zoomIn()" title="জুম ইন">
+        <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
+        জুম ইন
+    </button>
+    <button class="btn" onclick="zoomOut()" title="জুম আউট">
+        <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
+        জুম আউট
+    </button>
+    <button class="btn" onclick="zoomReset()" title="রিসেট">
+        <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+        রিসেট
+    </button>
+    <span class="zoom-info" id="zoom-level">100%</span>
+    <span style="flex:1"></span>
+    <button class="btn" onclick="exportText()" title="টেক্সট এক্সপোর্ট">
+        <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>
+        টেক্সট (.txt)
+    </button>
+    <button class="btn accent" onclick="exportPNG()" title="PNG এক্সপোর্ট">
+        <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        PNG/JPG এক্সপোর্ট
+    </button>
+</div>
+
+<div class="main">
+    <div class="editor-panel">
+        <div class="editor-header">
+            <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+            ERD কোড লিখুন
+        </div>
+        <textarea id="editor" placeholder="এখানে ERD কোড লিখুন..." spellcheck="false"></textarea>
+    </div>
+    <div class="canvas-panel">
+        <div id="canvas-container">
+            <div id="canvas">
+                <svg id="lines-svg" class="relationship-line" style="position:absolute;top:0;left:0;width:4000px;height:3000px;pointer-events:none;"></svg>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// ==================== SVG Icon Library ====================
+const ICONS = {
+    user: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>',
+    users: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>',
+    home: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>',
+    folder: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z"/></svg>',
+    'message-circle': '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5Z"/></svg>',
+    mail: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>',
+    default: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/></svg>'
+};
+
+function getIcon(name) {
+    return ICONS[name] || ICONS['default'];
+}
+
+// ==================== ERD Parser ====================
+function parseERD(text) {
+    const entities = {};
+    const relationships = [];
+
+    const lines = text.split('\n');
+    let currentEntity = null;
+    let inBraces = false;
+
+    for (let line of lines) {
+        const trimmed = line.trim();
+
+        if (!trimmed) continue;
+
+        if (inBraces) {
+            if (trimmed === '}') {
+                inBraces = false;
+                currentEntity = null;
+                continue;
+            }
+            if (currentEntity) {
+                const fieldMatch = trimmed.match(/^(\w+)\s+(\w+)(.*)?$/);
+                if (fieldMatch) {
+                    const [, name, type, extra] = fieldMatch;
+                    const isPK = extra && extra.includes('pk');
+                    entities[currentEntity].fields.push({ name, type, pk: isPK });
+                }
+            }
+            continue;
+        }
+
+        const relMatch = trimmed.match(/^(\w+)\.(\w+)\s*(<>|>|<)\s*(\w+)\.(\w+)$/);
+        if (relMatch) {
+            const [, fromTable, fromField, symbol, toTable, toField] = relMatch;
+            relationships.push({ fromTable, fromField, toTable, toField, symbol });
+            continue;
+        }
+
+        const entityMatch = trimmed.match(/^(\w+)\s*(?:\[([^\]]*)\])?\s*\{$/);
+        if (entityMatch) {
+            const [, name, metaStr] = entityMatch;
+            currentEntity = name;
+            const meta = {};
+            if (metaStr) {
+                metaStr.split(',').forEach(pair => {
+                    const [k, v] = pair.split(':').map(s => s.trim());
+                    if (k && v) meta[k] = v;
+                });
+            }
+            entities[name] = { name, fields: [], meta };
+            inBraces = true;
+        }
+    }
+
+    return { entities, relationships };
+}
+
+// ==================== Layout Engine ====================
+function layoutEntities(entities) {
+    const keys = Object.keys(entities);
+    const positions = {};
+    const cols = Math.ceil(Math.sqrt(keys.length * 1.5));
+    const gapX = 280, gapY = 20;
+    const startX = 60, startY = 60;
+
+    keys.forEach((key, i) => {
+        const col = i % cols;
+        const row = Math.floor(i / cols);
+        positions[key] = {
+            x: startX + col * (260 + gapX),
+            y: startY + row * (180 + gapY)
+        };
+    });
+
+    return positions;
+}
+
+// ==================== Renderer ====================
+let entityElements = {};
+let zoomScale = 1;
+
+function renderERD(text) {
+    const { entities, relationships } = parseERD(text);
+    const canvas = document.getElementById('canvas');
+    const svg = document.getElementById('lines-svg');
+    entityElements = {};
+
+    canvas.querySelectorAll('.entity').forEach(el => el.remove());
+    svg.innerHTML = '';
+
+    const positions = layoutEntities(entities);
+
+    Object.values(entities).forEach(entity => {
+        const pos = positions[entity.name];
+        if (!pos) return;
+
+        const color = entity.meta.color || 'blue';
+        const iconName = entity.meta.icon || 'default';
+
+        const div = document.createElement('div');
+        div.className = 'entity';
+        div.setAttribute('data-color', color);
+        div.style.left = pos.x + 'px';
+        div.style.top = pos.y + 'px';
+        div.id = 'entity-' + entity.name;
+
+        let fieldsHTML = '';
+        entity.fields.forEach(f => {
+            fieldsHTML += `<div class="field ${f.pk ? 'pk' : ''}">
+                <span>${f.name}</span>
+                ${f.pk ? '<span class="pk-badge">PK</span>' : ''}
+                <span class="field-type">${f.type}</span>
+            </div>`;
+        });
+
+        div.innerHTML = `
+            <div class="entity-header">
+                ${getIcon(iconName)}
+                <span class="entity-name">${entity.name}</span>
+            </div>
+            <div class="entity-fields">${fieldsHTML}</div>
+        `;
+
+        canvas.appendChild(div);
+        entityElements[entity.name] = { el: div, x: pos.x, y: pos.y, width: 260, height: 40 + entity.fields.length * 28 };
+    });
+
+    drawRelationships(relationships, entities);
+}
+
+function drawRelationships(relationships, entities) {
+    const svg = document.getElementById('lines-svg');
+    const svgNS = 'http://www.w3.org/2000/svg';
+
+    relationships.forEach(rel => {
+        const fromInfo = entityElements[rel.fromTable];
+        const toInfo = entityElements[rel.toTable];
+        if (!fromInfo || !toInfo) return;
+
+        const fromX = fromInfo.x + fromInfo.width / 2;
+        const fromY = fromInfo.y + fromInfo.height;
+        const toX = toInfo.x + toInfo.width / 2;
+        const toY = toInfo.y;
+
+        const line = document.createElementNS(svgNS, 'line');
+        line.setAttribute('x1', fromX);
+        line.setAttribute('y1', fromY);
+        line.setAttribute('x2', toX);
+        line.setAttribute('y2', toY);
+        line.setAttribute('stroke', '#8888a0');
+        line.setAttribute('stroke-width', '1.5');
+
+        if (rel.symbol === '<>') {
+            const circle = document.createElementNS(svgNS, 'circle');
+            circle.setAttribute('cx', fromX);
+            circle.setAttribute('cy', fromY);
+            circle.setAttribute('r', '4');
+            circle.setAttribute('fill', '#8888a0');
+            svg.appendChild(circle);
+
+            const circle2 = document.createElementNS(svgNS, 'circle');
+            circle2.setAttribute('cx', toX);
+            circle2.setAttribute('cy', toY);
+            circle2.setAttribute('r', '4');
+            circle2.setAttribute('fill', '#8888a0');
+            svg.appendChild(circle2);
+        } else if (rel.symbol === '>') {
+            const marker = document.createElementNS(svgNS, 'polygon');
+            marker.setAttribute('points', `${toX},${toY} ${toX-5},${toY-8} ${toX+5},${toY-8}`);
+            marker.setAttribute('fill', '#8888a0');
+            svg.appendChild(marker);
+        } else if (rel.symbol === '<') {
+            const marker = document.createElementNS(svgNS, 'polygon');
+            marker.setAttribute('points', `${fromX},${fromY} ${fromX-5},${fromY+8} ${fromX+5},${fromY+8}`);
+            marker.setAttribute('fill', '#8888a0');
+            svg.appendChild(marker);
+        }
+
+        svg.appendChild(line);
+    });
+}
+
+// ==================== Zoom ====================
+function setZoom(scale) {
+    zoomScale = Math.max(0.25, Math.min(3, scale));
+    const canvas = document.getElementById('canvas');
+    canvas.style.transform = `scale(${zoomScale})`;
+    document.getElementById('zoom-level').textContent = Math.round(zoomScale * 100) + '%';
+}
+
+function zoomIn() { setZoom(zoomScale + 0.1); }
+function zoomOut() { setZoom(zoomScale - 0.1); }
+function zoomReset() { setZoom(1); }
+
+// ==================== Export ====================
+function exportText() {
+    const text = document.getElementById('editor').value;
+    const blob = new Blob([text], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'erd.txt';
+    a.click();
+    URL.revokeObjectURL(url);
+}
+
+function exportPNG() {
+    const canvasDiv = document.getElementById('canvas');
+    const container = document.getElementById('canvas-container');
+    const originalTransform = canvasDiv.style.transform;
+    const originalScroll = { x: container.scrollLeft, y: container.scrollTop };
+
+    // Reset zoom and scroll to capture full canvas
+    canvasDiv.style.transform = 'scale(1)';
+    container.scrollLeft = 0;
+    container.scrollTop = 0;
+
+    const scale = 2; // HighDPI
+    const width = canvasDiv.scrollWidth * scale;
+    const height = canvasDiv.scrollHeight * scale;
+
+    // Collect all CSS rules
+    let cssText = '';
+    for (const sheet of document.styleSheets) {
+        try {
+            for (const rule of sheet.cssRules) {
+                cssText += rule.cssText + '\n';
+            }
+        } catch (e) { /* ignore cross-origin */ }
+    }
+
+    // Create SVG with foreignObject
+    const svgNS = 'http://www.w3.org/2000/svg';
+    const svg = document.createElementNS(svgNS, 'svg');
+    svg.setAttribute('width', width);
+    svg.setAttribute('height', height);
+    svg.setAttribute('xmlns', svgNS);
+
+    // Add styles
+    const styleEl = document.createElementNS(svgNS, 'style');
+    styleEl.textContent = cssText;
+    svg.appendChild(styleEl);
+
+    // Add foreignObject with cloned canvas
+    const foreignObject = document.createElementNS(svgNS, 'foreignObject');
+    foreignObject.setAttribute('width', canvasDiv.scrollWidth);
+    foreignObject.setAttribute('height', canvasDiv.scrollHeight);
+
+    const cloned = canvasDiv.cloneNode(true);
+    cloned.style.transform = '';
+    cloned.style.width = canvasDiv.scrollWidth + 'px';
+    cloned.style.height = canvasDiv.scrollHeight + 'px';
+    foreignObject.appendChild(cloned);
+    svg.appendChild(foreignObject);
+
+    // Serialize and load as image
+    const svgData = new XMLSerializer().serializeToString(svg);
+    const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
+    const url = URL.createObjectURL(svgBlob);
+
+    const img = new Image();
+    img.onload = function() {
+        const outCanvas = document.createElement('canvas');
+        outCanvas.width = width;
+        outCanvas.height = height;
+        const ctx = outCanvas.getContext('2d');
+        ctx.scale(scale, scale);
+        ctx.drawImage(img, 0, 0);
+
+        // Ask format
+        const isPNG = confirm('PNG এক্সপোর্ট করতে OK চাপুন, JPG এর জন্য Cancel করুন');
+        const format = isPNG ? 'png' : 'jpeg';
+        const link = document.createElement('a');
+        link.download = `erd.${format}`;
+        link.href = outCanvas.toDataURL(`image/${format}`, 0.92);
+        link.click();
+
+        URL.revokeObjectURL(url);
+        // Restore state
+        canvasDiv.style.transform = originalTransform;
+        container.scrollLeft = originalScroll.x;
+        container.scrollTop = originalScroll.y;
+    };
+    img.onerror = function() {
+        alert('এক্সপোর্ট করতে সমস্যা হয়েছে');
+        canvasDiv.style.transform = originalTransform;
+        container.scrollLeft = originalScroll.x;
+        container.scrollTop = originalScroll.y;
+    };
+    img.src = url;
+}
+
+// ==================== Editor Setup ====================
+const editor = document.getElementById('editor');
+const defaultText = `users [icon: user, color: blue] {
+  id string pk
+  displayName string
+  team_role string
+  teams string
+}
+
+teams [icon: users, color: blue] {
+  id string pk
+  name string
+}
+
+workspaces [icon: home] {
+  id string
+  createdAt timestamp
+  folderId string
+  teamId string
+}
+
+folders [icon: folder] {
+  id string
+  name string
+}
+
+chat [icon: message-circle, color: green] {
+  duration number
+  startedAt timestamp
+  endedAt timestamp
+  workspaceId string
+}
+
+invite [icon: mail, color: green] {
+  inviteId string
+  type string
+  workspaceId string
+  inviterId string
+}
+
+users.teams <> teams.id
+workspaces.folderId > folders.id
+workspaces.teamId > teams.id
+chat.workspaceId > workspaces.id
+invite.workspaceId > workspaces.id
+invite.inviterId > users.id`;
+
+editor.value = defaultText;
+
+let debounceTimer;
+editor.addEventListener('input', () => {
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(() => renderERD(editor.value), 300);
+});
+
+// Initial render
+renderERD(defaultText);
+</script>
+</body>
+</html>
