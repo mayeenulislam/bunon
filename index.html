@@ -14,9 +14,7 @@
          url('fonts/KohinoorBangla-Regular.woff2') format('woff2'),
          url('fonts/KohinoorBangla-Regular.woff') format('woff'),
          url('fonts/KohinoorBangla-Regular.ttf') format('truetype');
-    font-weight: normal;
-    font-style: normal;
-    font-display: swap;
+    font-weight: normal; font-style: normal; font-display: swap;
 }
 @font-face {
     font-family: 'Kohinoor Bangla';
@@ -27,9 +25,7 @@
          url('fonts/KohinoorBangla-Bold.woff2') format('woff2'),
          url('fonts/KohinoorBangla-Bold.woff') format('woff'),
          url('fonts/KohinoorBangla-Bold.ttf') format('truetype');
-    font-weight: bold;
-    font-style: normal;
-    font-display: swap;
+    font-weight: bold; font-style: normal; font-display: swap;
 }
 
 :root {
@@ -64,13 +60,7 @@ body {
     flex-shrink: 0;
     flex-wrap: wrap;
 }
-
-.toolbar h1 {
-    font-size: 14px;
-    font-weight: bold;
-    margin-right: auto;
-    color: white;
-}
+.toolbar h1 { font-size: 14px; font-weight: bold; margin-right: auto; color: white; }
 
 .btn {
     display: inline-flex;
@@ -86,23 +76,13 @@ body {
     cursor: pointer;
     transition: all 0.15s;
 }
-
 .btn:hover { background: #2a2b3d; border-color: var(--accent); }
 .btn.accent { background: var(--accent); border-color: var(--accent); }
 .btn.accent:hover { background: var(--accent-hover); }
 
-.zoom-info {
-    font-size: 12px;
-    color: var(--text-dim);
-    min-width: 45px;
-    text-align: center;
-}
+.zoom-info { font-size: 12px; color: var(--text-dim); min-width: 45px; text-align: center; }
 
-.main {
-    display: flex;
-    flex: 1;
-    overflow: hidden;
-}
+.main { display: flex; flex: 1; overflow: hidden; }
 
 .editor-panel {
     width: 320px;
@@ -114,7 +94,6 @@ body {
     background: var(--surface);
     flex-shrink: 0;
 }
-
 .editor-header {
     padding: 8px 12px;
     font-size: 12px;
@@ -125,7 +104,6 @@ body {
     align-items: center;
     gap: 6px;
 }
-
 #editor {
     flex: 1;
     padding: 12px;
@@ -139,10 +117,8 @@ body {
     line-height: 1.6;
     tab-size: 2;
 }
-
 #editor::placeholder { color: var(--text-dim); }
 
-/* Canvas Panel */
 .canvas-panel {
     flex: 1;
     position: relative;
@@ -157,9 +133,10 @@ body {
     height: 100%;
     overflow: auto;
     position: relative;
+    cursor: default;
 }
 
-/* zoom-wrapper wraps BOTH canvas and SVG so they scale together */
+/* zoom-wrapper: both #canvas and #lines-svg inside — scale together */
 #zoom-wrapper {
     position: absolute;
     top: 0;
@@ -169,24 +146,19 @@ body {
 
 #canvas {
     position: absolute;
-    top: 0;
-    left: 0;
-    width: 4000px;
-    height: 3000px;
+    top: 0; left: 0;
+    width: 4000px; height: 3000px;
 }
 
 #lines-svg {
     position: absolute;
-    top: 0;
-    left: 0;
-    width: 4000px;
-    height: 3000px;
+    top: 0; left: 0;
+    width: 4000px; height: 3000px;
     pointer-events: none;
     z-index: 5;
     overflow: visible;
 }
 
-/* Entity nodes */
 .entity {
     position: absolute;
     width: 220px;
@@ -198,7 +170,6 @@ body {
     cursor: grab;
     user-select: none;
 }
-
 .entity.dragging {
     cursor: grabbing;
     box-shadow: 0 8px 32px rgba(0,0,0,0.18);
@@ -211,30 +182,13 @@ body {
     gap: 8px;
     padding: 10px 14px;
     border-bottom: 1px solid var(--ecolor, #7c3aed);
-    /* FIX: No color-mix() — use explicit per-color CSS vars instead */
     background: var(--eheader-bg, #f5f3ff);
     border-radius: 8px 8px 0 0;
 }
+.entity-icon { width: 18px; height: 18px; display: flex; align-items: center; justify-content: center; color: var(--ecolor, #7c3aed); flex-shrink: 0; }
+.entity-name { font-weight: 700; font-size: 13px; color: var(--ecolor, #7c3aed); }
 
-.entity-icon {
-    width: 18px;
-    height: 18px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: var(--ecolor, #7c3aed);
-    flex-shrink: 0;
-}
-
-.entity-name {
-    font-weight: 700;
-    font-size: 13px;
-    color: var(--ecolor, #7c3aed);
-}
-
-.entity-fields {
-    padding: 4px 0;
-}
+.entity-fields { padding: 4px 0; }
 
 .field {
     display: flex;
@@ -246,11 +200,9 @@ body {
     position: relative;
     height: 28px;
 }
-
 .field.pk { font-weight: 500; }
 .field-name { color: #1a202c; font-weight: 500; }
 .field-type { color: #718096; margin-left: auto; font-size: 11px; }
-
 .pk-badge {
     font-size: 9px;
     background: #fef3c7;
@@ -263,7 +215,6 @@ body {
     flex-shrink: 0;
 }
 
-/* FIX: Explicit header bg per color — no color-mix() needed */
 [data-color="blue"]   { --ecolor: #3b82f6; --eheader-bg: #eff6ff; }
 [data-color="green"]  { --ecolor: #22c55e; --eheader-bg: #f0fdf4; }
 [data-color="red"]    { --ecolor: #ef4444; --eheader-bg: #fef2f2; }
@@ -287,7 +238,7 @@ body {
     </button>
     <button class="btn" onclick="zoomReset()">
         <svg width="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
-        Reset
+        Fit
     </button>
     <span class="zoom-info" id="zoom-level">100%</span>
     <span style="flex:1"></span>
@@ -325,20 +276,15 @@ var entityElements = {};
 var zoomScale = 1;
 var isDragging = false;
 var dragEntity = null;
-var dragOffsetX = 0;
-var dragOffsetY = 0;
+var dragOffsetX = 0, dragOffsetY = 0;
 
-// Layout constants
 var FIELD_HEIGHT  = 28;
 var HEADER_HEIGHT = 42;
 var PADDING_BOT   = 8;
 var ENTITY_WIDTH  = 220;
-var GAP_X         = 80;   // gap between columns
-var GAP_Y         = 60;   // gap between rows
-var START_X       = 60;
-var START_Y       = 60;
-var CANVAS_W      = 4000;
-var CANVAS_H      = 3000;
+var GAP_X = 80, GAP_Y = 60;
+var START_X = 60, START_Y = 60;
+var CANVAS_W = 4000, CANVAS_H = 3000;
 
 // ─── Icons ────────────────────────────────────────────────────────────────────
 var ICONS = {
@@ -352,11 +298,9 @@ var ICONS = {
 
 // ─── Parser ───────────────────────────────────────────────────────────────────
 function parseERD(text) {
-    var entities = {};
-    var relationships = [];
+    var entities = {}, relationships = [];
     var lines = text.split('\n');
-    var currentEntity = null;
-    var inBraces = false;
+    var currentEntity = null, inBraces = false;
 
     for (var i = 0; i < lines.length; i++) {
         var trimmed = lines[i].trim();
@@ -367,21 +311,21 @@ function parseERD(text) {
             if (currentEntity) {
                 var fm = trimmed.match(/^(\w+)\s+(\w+)(.*)?$/);
                 if (fm) {
-                    var isPK = fm[3] && fm[3].indexOf('pk') !== -1;
-                    entities[currentEntity].fields.push({ name: fm[1], type: fm[2], pk: isPK });
+                    entities[currentEntity].fields.push({
+                        name: fm[1], type: fm[2],
+                        pk: !!(fm[3] && fm[3].indexOf('pk') !== -1)
+                    });
                 }
             }
             continue;
         }
 
-        // Relationship line
         var rm = trimmed.match(/^(\w+)\.(\w+)\s*(<>|>|<)\s*(\w+)\.(\w+)$/);
         if (rm) {
             relationships.push({ fromTable: rm[1], fromField: rm[2], symbol: rm[3], toTable: rm[4], toField: rm[5] });
             continue;
         }
 
-        // Entity definition
         var em = trimmed.match(/^(\w+)\s*(?:\[([^\]]*)\])?\s*\{$/);
         if (em) {
             var ename = em[1];
@@ -405,25 +349,11 @@ function getEntityHeight(entity) {
     return HEADER_HEIGHT + entity.fields.length * FIELD_HEIGHT + PADDING_BOT;
 }
 
-/*
- * FIX: Smart grid layout.
- *
- * Strategy:
- *   1. Group entities by connected components (via BFS on relationships).
- *   2. For each group, figure out max columns that fit the canvas viewport
- *      comfortably — wrap into rows so we use vertical space too.
- *   3. After all groups, auto-fit-to-viewport by computing a scale.
- *
- * The "fit to viewport" happens AFTER positions are calculated — we measure
- * the total bounding box of all nodes and auto-zoom to fit it into the
- * visible canvas panel with padding.
- */
 function layoutEntities(entities, relationships) {
     var keys = Object.keys(entities);
     var positions = {};
     if (keys.length === 0) return positions;
 
-    // Build adjacency
     var adj = {};
     keys.forEach(function(k) { adj[k] = {}; });
     relationships.forEach(function(r) {
@@ -431,15 +361,12 @@ function layoutEntities(entities, relationships) {
         if (adj[r.toTable])   adj[r.toTable][r.fromTable] = true;
     });
 
-    // BFS to find connected components
-    var placed = {};
-    var groups = [];
+    var placed = {}, groups = [];
     function bfs(start) {
         var queue = [start], group = [];
         placed[start] = true;
         while (queue.length) {
-            var cur = queue.shift();
-            group.push(cur);
+            var cur = queue.shift(); group.push(cur);
             Object.keys(adj[cur] || {}).forEach(function(n) {
                 if (!placed[n]) { placed[n] = true; queue.push(n); }
             });
@@ -448,66 +375,34 @@ function layoutEntities(entities, relationships) {
     }
     keys.forEach(function(k) { if (!placed[k]) groups.push(bfs(k)); });
 
-    /*
-     * Decide how many columns to use per group.
-     * Rule: aim for roughly a square layout — sqrt(n) columns,
-     * but at least 1 and at most 4 (keeps things readable).
-     * For a single entity we use 1 column.
-     */
     function bestCols(n) {
         if (n <= 1) return 1;
         if (n <= 2) return 2;
         if (n <= 4) return 2;
         if (n <= 6) return 3;
-        return 4; // cap at 4 columns
+        return 4;
     }
 
     var curY = START_Y;
-
     groups.forEach(function(group) {
         var cols = bestCols(group.length);
-        var col = 0;
-        var rowStartY = curY;
-        var rowMaxH = 0;
-        var colX = START_X;
-
-        // track X position per column
         var colPositions = [];
-        for (var c = 0; c < cols; c++) {
-            colPositions.push(START_X + c * (ENTITY_WIDTH + GAP_X));
-        }
+        for (var c = 0; c < cols; c++) colPositions.push(START_X + c * (ENTITY_WIDTH + GAP_X));
 
+        var rowStartY = curY, rowMaxH = 0;
         group.forEach(function(name, idx) {
-            col = idx % cols;
-            if (col === 0 && idx > 0) {
-                // New row — advance Y by tallest entity in previous row
-                rowStartY += rowMaxH + GAP_Y;
-                rowMaxH = 0;
-            }
-
+            var col = idx % cols;
+            if (col === 0 && idx > 0) { rowStartY += rowMaxH + GAP_Y; rowMaxH = 0; }
             var h = getEntityHeight(entities[name]);
-            positions[name] = {
-                x: colPositions[col],
-                y: rowStartY,
-                width: ENTITY_WIDTH,
-                height: h
-            };
-
+            positions[name] = { x: colPositions[col], y: rowStartY, width: ENTITY_WIDTH, height: h };
             if (h > rowMaxH) rowMaxH = h;
         });
-
-        // After this group, advance curY past its last row
-        curY = rowStartY + rowMaxH + GAP_Y * 2; // extra gap between groups
+        curY = rowStartY + rowMaxH + GAP_Y * 2;
     });
 
     return positions;
 }
 
-// ─── Auto-fit zoom to viewport ────────────────────────────────────────────────
-/*
- * After layout, compute bounding box of all entities and zoom so everything
- * fits comfortably inside the visible canvas panel.
- */
 function autoFitZoom(positions) {
     var keys = Object.keys(positions);
     if (keys.length === 0) return;
@@ -521,30 +416,23 @@ function autoFitZoom(positions) {
         if (p.y + p.height > maxY) maxY = p.y + p.height;
     });
 
-    var contentW = maxX - minX + START_X * 2;  // add padding on right
-    var contentH = maxY - minY + START_Y * 2;  // add padding on bottom
-
+    var contentW = maxX - minX + START_X * 2;
+    var contentH = maxY - minY + START_Y * 2;
     var panel = document.querySelector('.canvas-panel');
     var panelW = panel ? panel.clientWidth  : 800;
     var panelH = panel ? panel.clientHeight : 600;
-
-    // Scale to fit, but never scale UP beyond 1 (don't zoom in on sparse layouts)
-    var scaleW = panelW / contentW;
-    var scaleH = panelH / contentH;
-    var scale  = Math.min(scaleW, scaleH, 1);
-    scale = Math.max(scale, 0.25); // don't go below 25%
-
+    var scale = Math.min(panelW / contentW, panelH / contentH, 1);
+    scale = Math.max(scale, 0.25);
     setZoom(scale);
 }
 
 // ─── Rendering ────────────────────────────────────────────────────────────────
 function renderERD(text) {
     var parsed = parseERD(text);
-    var entities  = parsed.entities;
-    var relationships = parsed.relationships;
+    var entities = parsed.entities, relationships = parsed.relationships;
 
     var canvas = document.getElementById('canvas');
-    var svg    = document.getElementById('lines-svg');
+    var svg = document.getElementById('lines-svg');
     entityElements = {};
     canvas.innerHTML = '';
     svg.innerHTML = '';
@@ -553,7 +441,7 @@ function renderERD(text) {
 
     Object.keys(entities).forEach(function(name) {
         var entity = entities[name];
-        var pos    = positions[name];
+        var pos = positions[name];
         if (!pos) return;
 
         var color   = entity.meta.color || 'grey';
@@ -587,47 +475,36 @@ function renderERD(text) {
         div.addEventListener('mousedown', function(e) { startDrag(e, name); });
         canvas.appendChild(div);
 
-        entityElements[name] = {
-            el: div,
-            entity: entity,
-            x: pos.x,
-            y: pos.y,
-            width:  pos.width,
-            height: pos.height
-        };
+        entityElements[name] = { el: div, entity: entity, x: pos.x, y: pos.y, width: pos.width, height: pos.height };
     });
 
-    // Auto-fit zoom to content
     autoFitZoom(positions);
-
     drawRelationships(relationships);
 }
 
-// ─── Field center Y in canvas-space ──────────────────────────────────────────
+// ─── Field center Y ───────────────────────────────────────────────────────────
 function getFieldCenterY(entityName, fieldName) {
     var info = entityElements[entityName];
     if (!info) return null;
     var fields = info.entity.fields;
     for (var i = 0; i < fields.length; i++) {
-        if (fields[i].name === fieldName) {
-            return info.y + HEADER_HEIGHT + (i * FIELD_HEIGHT) + (FIELD_HEIGHT / 2);
-        }
+        if (fields[i].name === fieldName)
+            return info.y + HEADER_HEIGHT + i * FIELD_HEIGHT + FIELD_HEIGHT / 2;
     }
     return info.y + info.height / 2;
 }
 
-// ─── Draw relationship lines ──────────────────────────────────────────────────
+// ─── Draw SVG lines ───────────────────────────────────────────────────────────
 function drawRelationships(relationships) {
-    var svg   = document.getElementById('lines-svg');
-    var svgNS = 'http://www.w3.org/2000/svg';
+    var svg = document.getElementById('lines-svg');
+    var NS  = 'http://www.w3.org/2000/svg';
     svg.innerHTML = '';
 
-    var defs = document.createElementNS(svgNS, 'defs');
-
+    var defs = document.createElementNS(NS, 'defs');
     function makeMarker(id, content) {
-        var m = document.createElementNS(svgNS, 'marker');
+        var m = document.createElementNS(NS, 'marker');
         m.setAttribute('id', id);
-        m.setAttribute('markerWidth',  '12');
+        m.setAttribute('markerWidth', '12');
         m.setAttribute('markerHeight', '10');
         m.setAttribute('refX', '6');
         m.setAttribute('refY', '5');
@@ -635,73 +512,49 @@ function drawRelationships(relationships) {
         m.innerHTML = content;
         defs.appendChild(m);
     }
-
-    makeMarker('marker-many',
-        '<line x1="3" y1="1" x2="3" y2="9" stroke="#94a3b8" stroke-width="1.5" fill="none"/>' +
-        '<line x1="6" y1="1" x2="6" y2="9" stroke="#94a3b8" stroke-width="1.5" fill="none"/>');
-    makeMarker('marker-one',
-        '<line x1="5" y1="1" x2="5" y2="9" stroke="#94a3b8" stroke-width="1.5" fill="none"/>');
-    makeMarker('marker-dot',
-        '<circle cx="5" cy="5" r="3" fill="#94a3b8"/>');
-
+    makeMarker('mk-many',
+        '<line x1="3" y1="1" x2="3" y2="9" stroke="#94a3b8" stroke-width="1.5"/>' +
+        '<line x1="6" y1="1" x2="6" y2="9" stroke="#94a3b8" stroke-width="1.5"/>');
+    makeMarker('mk-one',
+        '<line x1="5" y1="1" x2="5" y2="9" stroke="#94a3b8" stroke-width="1.5"/>');
     svg.appendChild(defs);
 
     relationships.forEach(function(rel) {
-        var fromInfo = entityElements[rel.fromTable];
-        var toInfo   = entityElements[rel.toTable];
-        if (!fromInfo || !toInfo) return;
+        var fi = entityElements[rel.fromTable];
+        var ti = entityElements[rel.toTable];
+        if (!fi || !ti) return;
 
         var y1 = getFieldCenterY(rel.fromTable, rel.fromField);
         var y2 = getFieldCenterY(rel.toTable,   rel.toField);
         if (y1 === null || y2 === null) return;
 
-        var fromCX = fromInfo.x + fromInfo.width / 2;
-        var toCX   = toInfo.x   + toInfo.width  / 2;
-
-        var x1, x2;
-        if (fromCX <= toCX) {
-            x1 = fromInfo.x + fromInfo.width;
-            x2 = toInfo.x;
-        } else {
-            x1 = fromInfo.x;
-            x2 = toInfo.x + toInfo.width;
-        }
+        var fromCX = fi.x + fi.width / 2;
+        var toCX   = ti.x + ti.width / 2;
+        var x1 = fromCX <= toCX ? fi.x + fi.width : fi.x;
+        var x2 = fromCX <= toCX ? ti.x             : ti.x + ti.width;
 
         var dx = Math.abs(x2 - x1);
-        var cpOffset = Math.min(Math.max(dx * 0.5, 40), 180);
+        var cp = Math.min(Math.max(dx * 0.5, 40), 180);
+        var cx1 = fromCX <= toCX ? x1 + cp : x1 - cp;
+        var cx2 = fromCX <= toCX ? x2 - cp : x2 + cp;
 
-        var cx1, cx2;
-        if (fromCX <= toCX) {
-            cx1 = x1 + cpOffset;
-            cx2 = x2 - cpOffset;
-        } else {
-            cx1 = x1 - cpOffset;
-            cx2 = x2 + cpOffset;
-        }
-
-        var d = 'M ' + x1 + ' ' + y1 +
-                ' C ' + cx1 + ' ' + y1 +
-                ', '  + cx2 + ' ' + y2 +
-                ', '  + x2  + ' ' + y2;
-
-        var path = document.createElementNS(svgNS, 'path');
-        path.setAttribute('d', d);
+        var path = document.createElementNS(NS, 'path');
+        path.setAttribute('d', 'M ' + x1 + ' ' + y1 + ' C ' + cx1 + ' ' + y1 + ', ' + cx2 + ' ' + y2 + ', ' + x2 + ' ' + y2);
         path.setAttribute('stroke', '#94a3b8');
         path.setAttribute('stroke-width', '1.5');
         path.setAttribute('fill', 'none');
         path.setAttribute('stroke-linecap', 'round');
 
         if (rel.symbol === '<>') {
-            path.setAttribute('marker-start', 'url(#marker-many)');
-            path.setAttribute('marker-end',   'url(#marker-many)');
+            path.setAttribute('marker-start', 'url(#mk-many)');
+            path.setAttribute('marker-end',   'url(#mk-many)');
         } else if (rel.symbol === '>') {
-            path.setAttribute('marker-start', 'url(#marker-many)');
-            path.setAttribute('marker-end',   'url(#marker-one)');
+            path.setAttribute('marker-start', 'url(#mk-many)');
+            path.setAttribute('marker-end',   'url(#mk-one)');
         } else if (rel.symbol === '<') {
-            path.setAttribute('marker-start', 'url(#marker-one)');
-            path.setAttribute('marker-end',   'url(#marker-many)');
+            path.setAttribute('marker-start', 'url(#mk-one)');
+            path.setAttribute('marker-end',   'url(#mk-many)');
         }
-
         svg.appendChild(path);
     });
 }
@@ -711,12 +564,10 @@ function startDrag(e, name) {
     if (e.button !== 0) return;
     isDragging = true;
     dragEntity = name;
-
     var info = entityElements[name];
-    var canvasRect = document.getElementById('zoom-wrapper').getBoundingClientRect();
-    dragOffsetX = (e.clientX - canvasRect.left) / zoomScale - info.x;
-    dragOffsetY = (e.clientY - canvasRect.top)  / zoomScale - info.y;
-
+    var wRect = document.getElementById('zoom-wrapper').getBoundingClientRect();
+    dragOffsetX = (e.clientX - wRect.left) / zoomScale - info.x;
+    dragOffsetY = (e.clientY - wRect.top)  / zoomScale - info.y;
     info.el.classList.add('dragging');
     document.addEventListener('mousemove', onDrag);
     document.addEventListener('mouseup',   stopDrag);
@@ -725,29 +576,22 @@ function startDrag(e, name) {
 
 function onDrag(e) {
     if (!isDragging || !dragEntity) return;
-    var info = entityElements[dragEntity];
-    var canvasRect = document.getElementById('zoom-wrapper').getBoundingClientRect();
-
-    var newX = (e.clientX - canvasRect.left) / zoomScale - dragOffsetX;
-    var newY = (e.clientY - canvasRect.top)  / zoomScale - dragOffsetY;
-
+    var info  = entityElements[dragEntity];
+    var wRect = document.getElementById('zoom-wrapper').getBoundingClientRect();
+    var newX  = (e.clientX - wRect.left) / zoomScale - dragOffsetX;
+    var newY  = (e.clientY - wRect.top)  / zoomScale - dragOffsetY;
     newX = Math.max(0, Math.min(CANVAS_W - info.width,  newX));
     newY = Math.max(0, Math.min(CANVAS_H - info.height, newY));
-
-    info.x = newX;
-    info.y = newY;
+    info.x = newX; info.y = newY;
     info.el.style.left = newX + 'px';
     info.el.style.top  = newY + 'px';
-
-    var parsed = parseERD(document.getElementById('editor').value);
-    drawRelationships(parsed.relationships);
+    drawRelationships(parseERD(document.getElementById('editor').value).relationships);
 }
 
 function stopDrag() {
     isDragging = false;
-    if (dragEntity && entityElements[dragEntity]) {
+    if (dragEntity && entityElements[dragEntity])
         entityElements[dragEntity].el.classList.remove('dragging');
-    }
     dragEntity = null;
     document.removeEventListener('mousemove', onDrag);
     document.removeEventListener('mouseup',   stopDrag);
@@ -755,7 +599,7 @@ function stopDrag() {
 
 // ─── Zoom ─────────────────────────────────────────────────────────────────────
 function setZoom(scale) {
-    zoomScale = Math.max(0.2, Math.min(3, scale));
+    zoomScale = Math.max(0.15, Math.min(4, scale));
     var wrapper = document.getElementById('zoom-wrapper');
     wrapper.style.transform = 'scale(' + zoomScale + ')';
     wrapper.style.width  = CANVAS_W + 'px';
@@ -763,18 +607,62 @@ function setZoom(scale) {
     document.getElementById('zoom-level').textContent = Math.round(zoomScale * 100) + '%';
 }
 
-function zoomIn()    { setZoom(zoomScale + 0.1); }
-function zoomOut()   { setZoom(zoomScale - 0.1); }
-function zoomReset() { renderERD(document.getElementById('editor').value); } // re-render re-fits
+/*
+ * Zoom toward a specific screen point (cursor position).
+ * Adjusts scroll so the point under cursor stays fixed.
+ *
+ * Math:
+ *   canvasPoint = (screenPt - containerOrigin + scroll) / oldScale
+ *   After new scale, we want that canvasPoint to be at same screenPt:
+ *   newScroll = canvasPoint * newScale - (screenPt - containerOrigin)
+ */
+function zoomAroundPoint(newScale, screenPt) {
+    newScale = Math.max(0.15, Math.min(4, newScale));
 
+    var container = document.getElementById('canvas-container');
+    var cRect     = container.getBoundingClientRect();
+
+    // Canvas-space coordinate under the cursor (before scale change)
+    var canvasX = (screenPt.x - cRect.left + container.scrollLeft) / zoomScale;
+    var canvasY = (screenPt.y - cRect.top  + container.scrollTop)  / zoomScale;
+
+    // Apply new scale
+    zoomScale = newScale;
+    var wrapper = document.getElementById('zoom-wrapper');
+    wrapper.style.transform = 'scale(' + zoomScale + ')';
+    wrapper.style.width  = CANVAS_W + 'px';
+    wrapper.style.height = CANVAS_H + 'px';
+    document.getElementById('zoom-level').textContent = Math.round(zoomScale * 100) + '%';
+
+    // Scroll so that same canvas point stays under cursor
+    container.scrollLeft = canvasX * zoomScale - (screenPt.x - cRect.left);
+    container.scrollTop  = canvasY * zoomScale - (screenPt.y - cRect.top);
+}
+
+function zoomIn()    { zoomAroundPoint(zoomScale + 0.1, { x: getCenterX(), y: getCenterY() }); }
+function zoomOut()   { zoomAroundPoint(zoomScale - 0.1, { x: getCenterX(), y: getCenterY() }); }
+function zoomReset() { renderERD(document.getElementById('editor').value); }
+
+function getCenterX() {
+    var r = document.querySelector('.canvas-panel').getBoundingClientRect();
+    return r.left + r.width  / 2;
+}
+function getCenterY() {
+    var r = document.querySelector('.canvas-panel').getBoundingClientRect();
+    return r.top  + r.height / 2;
+}
+
+// Mouse wheel — plain scroll zooms (no modifier needed), toward cursor
 document.getElementById('canvas-container').addEventListener('wheel', function(e) {
-    if (e.ctrlKey || e.metaKey) {
-        e.preventDefault();
-        setZoom(zoomScale + (e.deltaY > 0 ? -0.08 : 0.08));
-    }
+    e.preventDefault();
+    // Normalize: trackpads give tiny deltas, mice give large ones
+    var delta = e.deltaY;
+    var step  = Math.abs(delta) > 50 ? 0.12 : 0.05;
+    var dir   = delta > 0 ? -1 : 1;
+    zoomAroundPoint(zoomScale + dir * step, { x: e.clientX, y: e.clientY });
 }, { passive: false });
 
-// ─── Export ───────────────────────────────────────────────────────────────────
+// ─── Export Text ──────────────────────────────────────────────────────────────
 function exportText() {
     var text = document.getElementById('editor').value;
     var blob = new Blob([text], { type: 'text/plain' });
@@ -784,8 +672,277 @@ function exportText() {
     URL.revokeObjectURL(url);
 }
 
+// ─── Export PNG ───────────────────────────────────────────────────────────────
+/*
+ * Pure canvas 2D drawing — no external library.
+ * 1. Compute bounding box of all nodes.
+ * 2. Draw dot-grid background.
+ * 3. Draw bezier relationship lines.
+ * 4. Draw entity boxes (rounded rect, header, fields, PK badges).
+ * 5. toBlob → download.
+ */
+var COLOR_SCHEMES = {
+    blue:   { border: '#3b82f6', header: '#eff6ff', text: '#3b82f6' },
+    green:  { border: '#22c55e', header: '#f0fdf4', text: '#22c55e' },
+    red:    { border: '#ef4444', header: '#fef2f2', text: '#ef4444' },
+    grey:   { border: '#6b7280', header: '#f9fafb', text: '#6b7280' },
+    gray:   { border: '#6b7280', header: '#f9fafb', text: '#6b7280' },
+    purple: { border: '#7c3aed', header: '#f5f3ff', text: '#7c3aed' },
+    orange: { border: '#f97316', header: '#fff7ed', text: '#f97316' }
+};
+
 function exportPNG() {
-    alert('PNG export: use browser Print → Save as PDF or take a screenshot. Full canvas export coming soon!');
+    var keys = Object.keys(entityElements);
+    if (keys.length === 0) { alert('Nothing to export — add some tables first!'); return; }
+
+    // 1. Bounding box
+    var PAD = 60;
+    var minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    keys.forEach(function(k) {
+        var e = entityElements[k];
+        if (e.x            < minX) minX = e.x;
+        if (e.y            < minY) minY = e.y;
+        if (e.x + e.width  > maxX) maxX = e.x + e.width;
+        if (e.y + e.height > maxY) maxY = e.y + e.height;
+    });
+
+    var W  = maxX - minX + PAD * 2;
+    var H  = maxY - minY + PAD * 2;
+    var ox = minX - PAD;   // origin shift: canvas coord → image coord
+    var oy = minY - PAD;
+
+    // 2. Offscreen canvas @ 2× for retina
+    var DPR = 2;
+    var cv  = document.createElement('canvas');
+    cv.width  = W * DPR;
+    cv.height = H * DPR;
+    var ctx = cv.getContext('2d');
+    ctx.scale(DPR, DPR);
+
+    // 3. Background + dot grid
+    ctx.fillStyle = '#f0f2f5';
+    ctx.fillRect(0, 0, W, H);
+    var GRID = 24;
+    ctx.fillStyle = '#c8cdd6';
+    for (var gx = 0; gx <= W; gx += GRID) {
+        for (var gy = 0; gy <= H; gy += GRID) {
+            ctx.beginPath();
+            ctx.arc(gx, gy, 1, 0, Math.PI * 2);
+            ctx.fill();
+        }
+    }
+
+    // 4. Relationship lines
+    var parsed = parseERD(document.getElementById('editor').value);
+    ctx.strokeStyle = '#94a3b8';
+    ctx.lineWidth   = 1.5;
+    ctx.lineCap     = 'round';
+
+    parsed.relationships.forEach(function(rel) {
+        var fi = entityElements[rel.fromTable];
+        var ti = entityElements[rel.toTable];
+        if (!fi || !ti) return;
+
+        var y1 = getFieldCenterY(rel.fromTable, rel.fromField);
+        var y2 = getFieldCenterY(rel.toTable,   rel.toField);
+        if (y1 === null || y2 === null) return;
+
+        var fromCX = fi.x + fi.width / 2;
+        var toCX   = ti.x + ti.width / 2;
+        var x1 = fromCX <= toCX ? fi.x + fi.width : fi.x;
+        var x2 = fromCX <= toCX ? ti.x             : ti.x + ti.width;
+        var dx = Math.abs(x2 - x1);
+        var cp = Math.min(Math.max(dx * 0.5, 40), 180);
+        var cx1 = fromCX <= toCX ? x1 + cp : x1 - cp;
+        var cx2 = fromCX <= toCX ? x2 - cp : x2 + cp;
+
+        // Bezier
+        ctx.beginPath();
+        ctx.moveTo(x1 - ox, y1 - oy);
+        ctx.bezierCurveTo(cx1 - ox, y1 - oy, cx2 - ox, y2 - oy, x2 - ox, y2 - oy);
+        ctx.stroke();
+
+        // Arrow tick markers (simple chevrons)
+        function drawChevron(px, py, pointRight) {
+            var s = 7, d = pointRight ? -1 : 1;
+            ctx.beginPath();
+            ctx.moveTo(px - ox + d * s, py - oy - s);
+            ctx.lineTo(px - ox,         py - oy);
+            ctx.lineTo(px - ox + d * s, py - oy + s);
+            ctx.stroke();
+            // second tick for "many"
+            ctx.beginPath();
+            ctx.moveTo(px - ox + d * (s + 5), py - oy - s);
+            ctx.lineTo(px - ox + d * 5,        py - oy);
+            ctx.lineTo(px - ox + d * (s + 5), py - oy + s);
+            ctx.stroke();
+        }
+        function drawOneTick(px, py, pointRight) {
+            var d = pointRight ? -1 : 1;
+            ctx.beginPath();
+            ctx.moveTo(px - ox + d * 6, py - oy - 6);
+            ctx.lineTo(px - ox + d * 6, py - oy + 6);
+            ctx.stroke();
+        }
+
+        var leftToRight = fromCX <= toCX;
+        if (rel.symbol === '>' || rel.symbol === '<>') {
+            drawChevron(x2, y2, leftToRight);
+        }
+        if (rel.symbol === '<' || rel.symbol === '<>') {
+            drawChevron(x1, y1, !leftToRight);
+        }
+        if (rel.symbol === '>') drawOneTick(x1, y1, !leftToRight);
+        if (rel.symbol === '<') drawOneTick(x2, y2,  leftToRight);
+    });
+
+    // 5. Entity boxes
+    var R = 10; // border radius
+
+    function roundRect(x, y, w, h) {
+        ctx.beginPath();
+        ctx.moveTo(x + R, y);
+        ctx.lineTo(x + w - R, y);
+        ctx.arcTo(x + w, y, x + w, y + R, R);
+        ctx.lineTo(x + w, y + h - R);
+        ctx.arcTo(x + w, y + h, x + w - R, y + h, R);
+        ctx.lineTo(x + R, y + h);
+        ctx.arcTo(x, y + h, x, y + h - R, R);
+        ctx.lineTo(x, y + R);
+        ctx.arcTo(x, y, x + R, y, R);
+        ctx.closePath();
+    }
+
+    keys.forEach(function(name) {
+        var info   = entityElements[name];
+        var scheme = COLOR_SCHEMES[info.entity.meta.color] || COLOR_SCHEMES['grey'];
+        var x = info.x - ox;
+        var y = info.y - oy;
+        var w = info.width;
+        var h = info.height;
+
+        // Drop shadow
+        ctx.save();
+        ctx.shadowColor   = 'rgba(0,0,0,0.13)';
+        ctx.shadowBlur    = 12;
+        ctx.shadowOffsetY = 3;
+        roundRect(x, y, w, h);
+        ctx.fillStyle = '#ffffff';
+        ctx.fill();
+        ctx.restore();
+
+        // White body
+        roundRect(x, y, w, h);
+        ctx.fillStyle = '#ffffff';
+        ctx.fill();
+
+        // Border
+        roundRect(x, y, w, h);
+        ctx.strokeStyle = scheme.border;
+        ctx.lineWidth   = 2;
+        ctx.stroke();
+
+        // Header background (top-rounded only)
+        ctx.save();
+        ctx.beginPath();
+        ctx.moveTo(x + R, y);
+        ctx.lineTo(x + w - R, y);
+        ctx.arcTo(x + w, y, x + w, y + R, R);
+        ctx.lineTo(x + w, y + HEADER_HEIGHT);
+        ctx.lineTo(x, y + HEADER_HEIGHT);
+        ctx.lineTo(x, y + R);
+        ctx.arcTo(x, y, x + R, y, R);
+        ctx.closePath();
+        ctx.fillStyle = scheme.header;
+        ctx.fill();
+        ctx.restore();
+
+        // Header bottom divider
+        ctx.beginPath();
+        ctx.moveTo(x, y + HEADER_HEIGHT);
+        ctx.lineTo(x + w, y + HEADER_HEIGHT);
+        ctx.strokeStyle = scheme.border;
+        ctx.lineWidth   = 1;
+        ctx.stroke();
+
+        // Entity name text
+        ctx.textBaseline = 'middle';
+        ctx.textAlign    = 'left';
+        ctx.fillStyle    = scheme.text;
+        ctx.font         = 'bold 13px -apple-system, BlinkMacSystemFont, Arial, sans-serif';
+        ctx.fillText(name, x + 36, y + HEADER_HEIGHT / 2);
+
+        // Fields
+        var fy = y + HEADER_HEIGHT;
+        info.entity.fields.forEach(function(f, idx) {
+            var cy = fy + FIELD_HEIGHT / 2;
+
+            // Zebra stripe (subtle)
+            if (idx % 2 === 1) {
+                ctx.fillStyle = 'rgba(0,0,0,0.015)';
+                ctx.fillRect(x + 1, fy, w - 2, FIELD_HEIGHT);
+            }
+
+            // Field name
+            ctx.fillStyle    = '#1a202c';
+            ctx.font         = (f.pk ? '600 ' : '500 ') + '11.5px "SF Mono", Menlo, monospace';
+            ctx.textAlign    = 'left';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(f.name, x + 14, cy);
+
+            // PK badge
+            if (f.pk) {
+                var nameW   = ctx.measureText(f.name).width;
+                var badgeX  = x + 14 + nameW + 5;
+                var badgeW  = 24;
+                var badgeH  = 13;
+                var badgeY  = cy - badgeH / 2;
+                ctx.fillStyle   = '#fef3c7';
+                ctx.strokeStyle = '#fbbf24';
+                ctx.lineWidth   = 0.8;
+                ctx.beginPath();
+                ctx.roundRect ? ctx.roundRect(badgeX, badgeY, badgeW, badgeH, 3)
+                              : ctx.rect(badgeX, badgeY, badgeW, badgeH);
+                ctx.fill(); ctx.stroke();
+                ctx.fillStyle    = '#92400e';
+                ctx.font         = 'bold 8px Arial, sans-serif';
+                ctx.textAlign    = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText('PK', badgeX + badgeW / 2, cy);
+            }
+
+            // Field type (right side)
+            ctx.fillStyle    = '#718096';
+            ctx.font         = '11px "SF Mono", Menlo, monospace';
+            ctx.textAlign    = 'right';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(f.type, x + w - 14, cy);
+
+            // Row line
+            if (idx < info.entity.fields.length - 1) {
+                ctx.beginPath();
+                ctx.moveTo(x + 1, fy + FIELD_HEIGHT);
+                ctx.lineTo(x + w - 1, fy + FIELD_HEIGHT);
+                ctx.strokeStyle = '#f0f0f0';
+                ctx.lineWidth   = 0.5;
+                ctx.stroke();
+            }
+
+            fy += FIELD_HEIGHT;
+        });
+    });
+
+    // 6. Trigger download
+    cv.toBlob(function(blob) {
+        var url = URL.createObjectURL(blob);
+        var a   = document.createElement('a');
+        a.href     = url;
+        a.download = 'erd-diagram.png';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(function() { URL.revokeObjectURL(url); }, 1000);
+    }, 'image/png');
 }
 
 // ─── Boot ─────────────────────────────────────────────────────────────────────
@@ -838,20 +995,15 @@ invite.inviterId > users.id`;
 var editor = document.getElementById('editor');
 editor.value = defaultText;
 
-// Initial zoom
 setZoom(1);
 
-// Debounced re-render
 var debounceTimer;
 editor.addEventListener('input', function() {
     clearTimeout(debounceTimer);
     debounceTimer = setTimeout(function() { renderERD(editor.value); }, 280);
 });
 
-// Wait for layout to be painted before first render so panel size is available
-requestAnimationFrame(function() {
-    renderERD(defaultText);
-});
+requestAnimationFrame(function() { renderERD(defaultText); });
 </script>
 </body>
 </html>
