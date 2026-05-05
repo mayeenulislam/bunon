@@ -148,12 +148,10 @@ body {
     position: relative;
     overflow: hidden;
     background: #f0f2f5;
-    /* Subtle grid */
     background-image: radial-gradient(circle, #c8cdd6 1px, transparent 1px);
     background-size: 24px 24px;
 }
 
-/* The scrollable viewport */
 #canvas-container {
     width: 100%;
     height: 100%;
@@ -161,19 +159,14 @@ body {
     position: relative;
 }
 
-/*
- * FIX: The zoom wrapper scales both the node canvas AND the SVG together.
- * This ensures lines always stay aligned with nodes regardless of zoom.
- */
+/* zoom-wrapper wraps BOTH canvas and SVG so they scale together */
 #zoom-wrapper {
     position: absolute;
     top: 0;
     left: 0;
     transform-origin: 0 0;
-    /* Size set by JS based on virtual canvas size */
 }
 
-/* Node canvas - absolute positioned nodes live here */
 #canvas {
     position: absolute;
     top: 0;
@@ -182,7 +175,6 @@ body {
     height: 3000px;
 }
 
-/* SVG lines - same size as canvas, sits on top */
 #lines-svg {
     position: absolute;
     top: 0;
@@ -219,7 +211,8 @@ body {
     gap: 8px;
     padding: 10px 14px;
     border-bottom: 1px solid var(--ecolor, #7c3aed);
-    background: color-mix(in srgb, var(--ecolor, #7c3aed) 8%, white);
+    /* FIX: No color-mix() — use explicit per-color CSS vars instead */
+    background: var(--eheader-bg, #f5f3ff);
     border-radius: 8px 8px 0 0;
 }
 
@@ -255,7 +248,6 @@ body {
 }
 
 .field.pk { font-weight: 500; }
-
 .field-name { color: #1a202c; font-weight: 500; }
 .field-type { color: #718096; margin-left: auto; font-size: 11px; }
 
@@ -271,13 +263,14 @@ body {
     flex-shrink: 0;
 }
 
-[data-color="blue"]  { --ecolor: #3b82f6; }
-[data-color="green"] { --ecolor: #22c55e; }
-[data-color="red"]   { --ecolor: #ef4444; }
+/* FIX: Explicit header bg per color — no color-mix() needed */
+[data-color="blue"]   { --ecolor: #3b82f6; --eheader-bg: #eff6ff; }
+[data-color="green"]  { --ecolor: #22c55e; --eheader-bg: #f0fdf4; }
+[data-color="red"]    { --ecolor: #ef4444; --eheader-bg: #fef2f2; }
 [data-color="grey"],
-[data-color="gray"]  { --ecolor: #6b7280; }
-[data-color="purple"]{ --ecolor: #7c3aed; }
-[data-color="orange"]{ --ecolor: #f97316; }
+[data-color="gray"]   { --ecolor: #6b7280; --eheader-bg: #f9fafb; }
+[data-color="purple"] { --ecolor: #7c3aed; --eheader-bg: #f5f3ff; }
+[data-color="orange"] { --ecolor: #f97316; --eheader-bg: #fff7ed; }
 </style>
 </head>
 <body>
@@ -318,7 +311,6 @@ body {
     </div>
     <div class="canvas-panel">
         <div id="canvas-container">
-            <!-- FIX: zoom-wrapper wraps BOTH canvas and SVG so they scale together -->
             <div id="zoom-wrapper">
                 <div id="canvas"></div>
                 <svg id="lines-svg"></svg>
@@ -328,8 +320,8 @@ body {
 </div>
 
 <script>
-// ─── State ───────────────────────────────────────────────────────────────────
-var entityElements = {};   // name → { el, entity, x, y, width }
+// ─── State ────────────────────────────────────────────────────────────────────
+var entityElements = {};
 var zoomScale = 1;
 var isDragging = false;
 var dragEntity = null;
@@ -337,18 +329,18 @@ var dragOffsetX = 0;
 var dragOffsetY = 0;
 
 // Layout constants
-var FIELD_HEIGHT  = 28;   // px per field row
-var HEADER_HEIGHT = 42;   // entity header height
-var PADDING_BOT   = 8;    // bottom padding inside entity
+var FIELD_HEIGHT  = 28;
+var HEADER_HEIGHT = 42;
+var PADDING_BOT   = 8;
 var ENTITY_WIDTH  = 220;
-var GAP_X         = 80;   // horizontal gap between entities  ← was 420, WAY too big
-var GAP_Y         = 60;   // vertical gap between rows
+var GAP_X         = 80;   // gap between columns
+var GAP_Y         = 60;   // gap between rows
 var START_X       = 60;
 var START_Y       = 60;
 var CANVAS_W      = 4000;
 var CANVAS_H      = 3000;
 
-// ─── Icons ───────────────────────────────────────────────────────────────────
+// ─── Icons ────────────────────────────────────────────────────────────────────
 var ICONS = {
     user: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>',
     users: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>',
@@ -358,7 +350,7 @@ var ICONS = {
     mail: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>'
 };
 
-// ─── Parser ──────────────────────────────────────────────────────────────────
+// ─── Parser ───────────────────────────────────────────────────────────────────
 function parseERD(text) {
     var entities = {};
     var relationships = [];
@@ -382,18 +374,14 @@ function parseERD(text) {
             continue;
         }
 
-        // Relationship line: table.field (symbol) table.field
+        // Relationship line
         var rm = trimmed.match(/^(\w+)\.(\w+)\s*(<>|>|<)\s*(\w+)\.(\w+)$/);
         if (rm) {
-            relationships.push({
-                fromTable: rm[1], fromField: rm[2],
-                symbol: rm[3],
-                toTable: rm[4], toField: rm[5]
-            });
+            relationships.push({ fromTable: rm[1], fromField: rm[2], symbol: rm[3], toTable: rm[4], toField: rm[5] });
             continue;
         }
 
-        // Entity definition: Name [icon: x, color: y] {
+        // Entity definition
         var em = trimmed.match(/^(\w+)\s*(?:\[([^\]]*)\])?\s*\{$/);
         if (em) {
             var ename = em[1];
@@ -412,16 +400,30 @@ function parseERD(text) {
     return { entities: entities, relationships: relationships };
 }
 
-// ─── Layout ──────────────────────────────────────────────────────────────────
+// ─── Layout ───────────────────────────────────────────────────────────────────
 function getEntityHeight(entity) {
     return HEADER_HEIGHT + entity.fields.length * FIELD_HEIGHT + PADDING_BOT;
 }
 
+/*
+ * FIX: Smart grid layout.
+ *
+ * Strategy:
+ *   1. Group entities by connected components (via BFS on relationships).
+ *   2. For each group, figure out max columns that fit the canvas viewport
+ *      comfortably — wrap into rows so we use vertical space too.
+ *   3. After all groups, auto-fit-to-viewport by computing a scale.
+ *
+ * The "fit to viewport" happens AFTER positions are calculated — we measure
+ * the total bounding box of all nodes and auto-zoom to fit it into the
+ * visible canvas panel with padding.
+ */
 function layoutEntities(entities, relationships) {
     var keys = Object.keys(entities);
     var positions = {};
+    if (keys.length === 0) return positions;
 
-    // Build adjacency for grouping connected components
+    // Build adjacency
     var adj = {};
     keys.forEach(function(k) { adj[k] = {}; });
     relationships.forEach(function(r) {
@@ -429,9 +431,9 @@ function layoutEntities(entities, relationships) {
         if (adj[r.toTable])   adj[r.toTable][r.fromTable] = true;
     });
 
+    // BFS to find connected components
     var placed = {};
     var groups = [];
-
     function bfs(start) {
         var queue = [start], group = [];
         placed[start] = true;
@@ -444,29 +446,101 @@ function layoutEntities(entities, relationships) {
         }
         return group;
     }
-
     keys.forEach(function(k) { if (!placed[k]) groups.push(bfs(k)); });
 
+    /*
+     * Decide how many columns to use per group.
+     * Rule: aim for roughly a square layout — sqrt(n) columns,
+     * but at least 1 and at most 4 (keeps things readable).
+     * For a single entity we use 1 column.
+     */
+    function bestCols(n) {
+        if (n <= 1) return 1;
+        if (n <= 2) return 2;
+        if (n <= 4) return 2;
+        if (n <= 6) return 3;
+        return 4; // cap at 4 columns
+    }
+
     var curY = START_Y;
+
     groups.forEach(function(group) {
-        var curX = START_X;
-        var rowH = 0;
-        group.forEach(function(name) {
+        var cols = bestCols(group.length);
+        var col = 0;
+        var rowStartY = curY;
+        var rowMaxH = 0;
+        var colX = START_X;
+
+        // track X position per column
+        var colPositions = [];
+        for (var c = 0; c < cols; c++) {
+            colPositions.push(START_X + c * (ENTITY_WIDTH + GAP_X));
+        }
+
+        group.forEach(function(name, idx) {
+            col = idx % cols;
+            if (col === 0 && idx > 0) {
+                // New row — advance Y by tallest entity in previous row
+                rowStartY += rowMaxH + GAP_Y;
+                rowMaxH = 0;
+            }
+
             var h = getEntityHeight(entities[name]);
-            positions[name] = { x: curX, y: curY, width: ENTITY_WIDTH, height: h };
-            curX += ENTITY_WIDTH + GAP_X;
-            if (h > rowH) rowH = h;
+            positions[name] = {
+                x: colPositions[col],
+                y: rowStartY,
+                width: ENTITY_WIDTH,
+                height: h
+            };
+
+            if (h > rowMaxH) rowMaxH = h;
         });
-        curY += rowH + GAP_Y;
+
+        // After this group, advance curY past its last row
+        curY = rowStartY + rowMaxH + GAP_Y * 2; // extra gap between groups
     });
 
     return positions;
 }
 
-// ─── Rendering ───────────────────────────────────────────────────────────────
+// ─── Auto-fit zoom to viewport ────────────────────────────────────────────────
+/*
+ * After layout, compute bounding box of all entities and zoom so everything
+ * fits comfortably inside the visible canvas panel.
+ */
+function autoFitZoom(positions) {
+    var keys = Object.keys(positions);
+    if (keys.length === 0) return;
+
+    var minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    keys.forEach(function(k) {
+        var p = positions[k];
+        if (p.x < minX) minX = p.x;
+        if (p.y < minY) minY = p.y;
+        if (p.x + p.width  > maxX) maxX = p.x + p.width;
+        if (p.y + p.height > maxY) maxY = p.y + p.height;
+    });
+
+    var contentW = maxX - minX + START_X * 2;  // add padding on right
+    var contentH = maxY - minY + START_Y * 2;  // add padding on bottom
+
+    var panel = document.querySelector('.canvas-panel');
+    var panelW = panel ? panel.clientWidth  : 800;
+    var panelH = panel ? panel.clientHeight : 600;
+
+    // Scale to fit, but never scale UP beyond 1 (don't zoom in on sparse layouts)
+    var scaleW = panelW / contentW;
+    var scaleH = panelH / contentH;
+    var scale  = Math.min(scaleW, scaleH, 1);
+    scale = Math.max(scale, 0.25); // don't go below 25%
+
+    setZoom(scale);
+}
+
+// ─── Rendering ────────────────────────────────────────────────────────────────
 function renderERD(text) {
     var parsed = parseERD(text);
-    var entities = parsed.entities;
+    var entities  = parsed.entities;
     var relationships = parsed.relationships;
 
     var canvas = document.getElementById('canvas');
@@ -479,7 +553,7 @@ function renderERD(text) {
 
     Object.keys(entities).forEach(function(name) {
         var entity = entities[name];
-        var pos = positions[name];
+        var pos    = positions[name];
         if (!pos) return;
 
         var color   = entity.meta.color || 'grey';
@@ -495,11 +569,12 @@ function renderERD(text) {
 
         var fieldsHTML = '';
         entity.fields.forEach(function(f) {
-            fieldsHTML += '<div class="field' + (f.pk ? ' pk' : '') + '" data-fieldname="' + f.name + '">';
-            fieldsHTML += '<span class="field-name">' + f.name + '</span>';
-            if (f.pk) fieldsHTML += '<span class="pk-badge">PK</span>';
-            fieldsHTML += '<span class="field-type">' + f.type + '</span>';
-            fieldsHTML += '</div>';
+            fieldsHTML +=
+                '<div class="field' + (f.pk ? ' pk' : '') + '" data-fieldname="' + f.name + '">' +
+                    '<span class="field-name">' + f.name + '</span>' +
+                    (f.pk ? '<span class="pk-badge">PK</span>' : '') +
+                    '<span class="field-type">' + f.type + '</span>' +
+                '</div>';
         });
 
         div.innerHTML =
@@ -517,26 +592,27 @@ function renderERD(text) {
             entity: entity,
             x: pos.x,
             y: pos.y,
-            width: pos.width,
+            width:  pos.width,
             height: pos.height
         };
     });
 
+    // Auto-fit zoom to content
+    autoFitZoom(positions);
+
     drawRelationships(relationships);
 }
 
-// ─── Get the canvas-space Y center of a specific field in an entity ──────────
+// ─── Field center Y in canvas-space ──────────────────────────────────────────
 function getFieldCenterY(entityName, fieldName) {
     var info = entityElements[entityName];
     if (!info) return null;
     var fields = info.entity.fields;
     for (var i = 0; i < fields.length; i++) {
         if (fields[i].name === fieldName) {
-            // HEADER_HEIGHT + (index * FIELD_HEIGHT) + half field = center of that row
             return info.y + HEADER_HEIGHT + (i * FIELD_HEIGHT) + (FIELD_HEIGHT / 2);
         }
     }
-    // Fallback: entity vertical center
     return info.y + info.height / 2;
 }
 
@@ -546,7 +622,6 @@ function drawRelationships(relationships) {
     var svgNS = 'http://www.w3.org/2000/svg';
     svg.innerHTML = '';
 
-    // ── Markers ──────────────────────────────────────────────────────────────
     var defs = document.createElementNS(svgNS, 'defs');
 
     function makeMarker(id, content) {
@@ -561,49 +636,37 @@ function drawRelationships(relationships) {
         defs.appendChild(m);
     }
 
-    // Crow's foot (many) — two vertical lines at the tip
     makeMarker('marker-many',
         '<line x1="3" y1="1" x2="3" y2="9" stroke="#94a3b8" stroke-width="1.5" fill="none"/>' +
         '<line x1="6" y1="1" x2="6" y2="9" stroke="#94a3b8" stroke-width="1.5" fill="none"/>');
-
-    // One — single vertical bar
     makeMarker('marker-one',
         '<line x1="5" y1="1" x2="5" y2="9" stroke="#94a3b8" stroke-width="1.5" fill="none"/>');
-
-    // Dot — circle for optional
     makeMarker('marker-dot',
         '<circle cx="5" cy="5" r="3" fill="#94a3b8"/>');
 
     svg.appendChild(defs);
 
-    // ── Draw each relationship ───────────────────────────────────────────────
     relationships.forEach(function(rel) {
         var fromInfo = entityElements[rel.fromTable];
         var toInfo   = entityElements[rel.toTable];
         if (!fromInfo || !toInfo) return;
 
-        // Y centers of the connected fields
         var y1 = getFieldCenterY(rel.fromTable, rel.fromField);
         var y2 = getFieldCenterY(rel.toTable,   rel.toField);
         if (y1 === null || y2 === null) return;
 
-        // Decide which sides to exit from based on horizontal position
-        // From-entity center X vs To-entity center X
         var fromCX = fromInfo.x + fromInfo.width / 2;
         var toCX   = toInfo.x   + toInfo.width  / 2;
 
         var x1, x2;
         if (fromCX <= toCX) {
-            // from is to the LEFT of to → exit right, enter left
             x1 = fromInfo.x + fromInfo.width;
             x2 = toInfo.x;
         } else {
-            // from is to the RIGHT of to → exit left, enter right
             x1 = fromInfo.x;
             x2 = toInfo.x + toInfo.width;
         }
 
-        // Smooth cubic bezier — control points pulled horizontally
         var dx = Math.abs(x2 - x1);
         var cpOffset = Math.min(Math.max(dx * 0.5, 40), 180);
 
@@ -628,19 +691,13 @@ function drawRelationships(relationships) {
         path.setAttribute('fill', 'none');
         path.setAttribute('stroke-linecap', 'round');
 
-        // Assign markers based on relationship symbol
-        // > means many-to-one: start=many, end=one
-        // < means one-to-many: start=one, end=many
-        // <> means many-to-many
         if (rel.symbol === '<>') {
             path.setAttribute('marker-start', 'url(#marker-many)');
             path.setAttribute('marker-end',   'url(#marker-many)');
         } else if (rel.symbol === '>') {
-            // fromTable.field > toTable.field  →  many-to-one
             path.setAttribute('marker-start', 'url(#marker-many)');
             path.setAttribute('marker-end',   'url(#marker-one)');
         } else if (rel.symbol === '<') {
-            // fromTable.field < toTable.field  →  one-to-many
             path.setAttribute('marker-start', 'url(#marker-one)');
             path.setAttribute('marker-end',   'url(#marker-many)');
         }
@@ -652,11 +709,10 @@ function drawRelationships(relationships) {
 // ─── Drag ─────────────────────────────────────────────────────────────────────
 function startDrag(e, name) {
     if (e.button !== 0) return;
-    isDragging  = true;
-    dragEntity  = name;
+    isDragging = true;
+    dragEntity = name;
 
     var info = entityElements[name];
-    // offset in canvas-space (divide client delta by zoom)
     var canvasRect = document.getElementById('zoom-wrapper').getBoundingClientRect();
     dragOffsetX = (e.clientX - canvasRect.left) / zoomScale - info.x;
     dragOffsetY = (e.clientY - canvasRect.top)  / zoomScale - info.y;
@@ -675,7 +731,6 @@ function onDrag(e) {
     var newX = (e.clientX - canvasRect.left) / zoomScale - dragOffsetX;
     var newY = (e.clientY - canvasRect.top)  / zoomScale - dragOffsetY;
 
-    // Clamp inside canvas
     newX = Math.max(0, Math.min(CANVAS_W - info.width,  newX));
     newY = Math.max(0, Math.min(CANVAS_H - info.height, newY));
 
@@ -684,7 +739,6 @@ function onDrag(e) {
     info.el.style.left = newX + 'px';
     info.el.style.top  = newY + 'px';
 
-    // Redraw lines live
     var parsed = parseERD(document.getElementById('editor').value);
     drawRelationships(parsed.relationships);
 }
@@ -702,20 +756,16 @@ function stopDrag() {
 // ─── Zoom ─────────────────────────────────────────────────────────────────────
 function setZoom(scale) {
     zoomScale = Math.max(0.2, Math.min(3, scale));
-
-    // Scale the zoom-wrapper (contains both #canvas and #lines-svg)
     var wrapper = document.getElementById('zoom-wrapper');
     wrapper.style.transform = 'scale(' + zoomScale + ')';
-    // Keep the scrollable area sized correctly so scrollbars appear
     wrapper.style.width  = CANVAS_W + 'px';
     wrapper.style.height = CANVAS_H + 'px';
-
     document.getElementById('zoom-level').textContent = Math.round(zoomScale * 100) + '%';
 }
 
 function zoomIn()    { setZoom(zoomScale + 0.1); }
 function zoomOut()   { setZoom(zoomScale - 0.1); }
-function zoomReset() { setZoom(1); }
+function zoomReset() { renderERD(document.getElementById('editor').value); } // re-render re-fits
 
 document.getElementById('canvas-container').addEventListener('wheel', function(e) {
     if (e.ctrlKey || e.metaKey) {
@@ -788,18 +838,20 @@ invite.inviterId > users.id`;
 var editor = document.getElementById('editor');
 editor.value = defaultText;
 
-// Initial zoom wrapper sizing
+// Initial zoom
 setZoom(1);
 
-// Debounced re-render on edit
+// Debounced re-render
 var debounceTimer;
 editor.addEventListener('input', function() {
     clearTimeout(debounceTimer);
     debounceTimer = setTimeout(function() { renderERD(editor.value); }, 280);
 });
 
-// Initial render
-renderERD(defaultText);
+// Wait for layout to be painted before first render so panel size is available
+requestAnimationFrame(function() {
+    renderERD(defaultText);
+});
 </script>
 </body>
 </html>
