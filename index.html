@@ -76,12 +76,20 @@ body {
     font-size: 12px;
     cursor: pointer;
     transition: all 0.15s;
+    white-space: nowrap;
 }
 .btn:hover { background: #2a2b3d; border-color: var(--accent); }
 .btn.accent { background: var(--accent); border-color: var(--accent); }
 .btn.accent:hover { background: var(--accent-hover); }
 
-.zoom-info { display: inline-block; font-size: 12px; color: var(--text-dim); min-width: 45px; text-align: center; vertical-align: middle; }
+.zoom-info {
+    display: inline-block;
+    font-size: 12px;
+    color: var(--text-dim);
+    min-width: 45px;
+    text-align: center;
+    vertical-align: middle;
+}
 
 .main { display: flex; flex: 1; overflow: hidden; }
 
@@ -120,36 +128,54 @@ body {
 }
 #editor::placeholder { color: var(--text-dim); }
 
+/* ═══════════════════════════════════════
+   CANVAS PANEL — infinite canvas approach
+   overflow:hidden + JS-managed pan/zoom
+   NO scrollbars, NO overflow:auto
+   ═══════════════════════════════════════ */
 .canvas-panel {
     flex: 1;
     position: relative;
-    overflow: hidden;
+    overflow: hidden;          /* clip content, NOT scroll */
     background: #f0f2f5;
     background-image: radial-gradient(circle, #c8cdd6 1px, transparent 1px);
     background-size: 24px 24px;
-}
-
-#canvas-container {
-    width: 100%;
-    height: 100%;
-    overflow: auto;
-    position: relative;
     cursor: default;
 }
 
-/* zoom-wrapper: both #canvas and #lines-svg inside — scale together */
+/*
+ * zoom-wrapper sits directly in canvas-panel (overflow:hidden).
+ * Its transform is: translate(panX px, panY px) scale(zoom)
+ * controlled 100% by JS — no browser scroll involved.
+ *
+ * WHY THIS FIXES THE BUG:
+ *   Old approach used overflow:auto + CSS scale(). CSS scale() only
+ *   affects rendering, not layout — so the 4000×3000 element still
+ *   occupied 4000×3000 of scroll space even at 10% zoom, making
+ *   scrollbars useless and edges unreachable.
+ *
+ *   New approach: overflow:hidden panel + translate(panX,panY) means
+ *   we move content by changing panX/panY directly. Pan works at ANY
+ *   zoom level because it's just arithmetic, not scroll position.
+ */
 #zoom-wrapper {
     position: absolute;
     top: 0;
     left: 0;
     transform-origin: 0 0;
+    /* transform set by applyTransform() */
+    will-change: transform;
 }
 
 #canvas {
     position: absolute;
     top: 0; left: 0;
     width: 4000px; height: 3000px;
+    pointer-events: none; /* let mousedown on empty space fall through to panel */
 }
+
+/* entities re-enable pointer events individually */
+.entity { pointer-events: all; }
 
 #lines-svg {
     position: absolute;
@@ -160,6 +186,7 @@ body {
     overflow: visible;
 }
 
+/* Entity nodes */
 .entity {
     position: absolute;
     width: 220px;
@@ -176,7 +203,6 @@ body {
     box-shadow: 0 8px 32px rgba(0,0,0,0.18);
     z-index: 100;
 }
-
 .entity-header {
     display: flex;
     align-items: center;
@@ -188,9 +214,7 @@ body {
 }
 .entity-icon { width: 18px; height: 18px; display: flex; align-items: center; justify-content: center; color: var(--ecolor, #7c3aed); flex-shrink: 0; }
 .entity-name { font-weight: 700; font-size: 13px; color: var(--ecolor, #7c3aed); }
-
 .entity-fields { padding: 4px 0; }
-
 .field {
     display: flex;
     align-items: center;
@@ -223,12 +247,37 @@ body {
 [data-color="gray"]   { --ecolor: #6b7280; --eheader-bg: #f9fafb; }
 [data-color="purple"] { --ecolor: #7c3aed; --eheader-bg: #f5f3ff; }
 [data-color="orange"] { --ecolor: #f97316; --eheader-bg: #fff7ed; }
+
+/* HUD */
+.hud {
+    position: absolute;
+    bottom: 20px;
+    right: 20px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    z-index: 100;
+}
+.hint-bar {
+    position: absolute;
+    bottom: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 11px;
+    color: var(--text-dim);
+    background: rgba(26,27,38,0.75);
+    padding: 4px 12px;
+    border-radius: 20px;
+    pointer-events: none;
+    white-space: nowrap;
+    z-index: 100;
+}
 </style>
 </head>
 <body>
 
 <div class="toolbar">
-    <img src="logo-white.png" alt="Logo of BUNON" width="20" height="20">
+    <img src="logo-white.png" alt="Logo of BUNON" width="20" height="20" onerror="this.style.display='none'">
     <h1>BUNON</h1>
     <span style="flex:1"></span>
     <button class="btn accent" onclick="exportPNG()">
@@ -244,46 +293,64 @@ body {
             Entity Relationship
         </div>
         <textarea id="editor" placeholder="Write ERD Code here..." spellcheck="false"></textarea>
-        <div style="background-color: #333; border-top: 1px solid #666; padding: 5px; text-align: right;">
+        <div style="background-color:#333;border-top:1px solid #666;padding:5px;text-align:right;">
             <button class="btn" onclick="exportText()">
                 <svg width="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>
                 Export as Text
             </button>
         </div>
     </div>
-    <div class="canvas-panel">
-        <div id="canvas-container">
-            <div id="zoom-wrapper">
-                <div id="canvas"></div>
-                <svg id="lines-svg"></svg>
-            </div>
+
+    <div class="canvas-panel" id="canvas-panel">
+
+        <!-- THE INFINITE CANVAS WRAPPER -->
+        <div id="zoom-wrapper">
+            <div id="canvas"></div>
+            <svg id="lines-svg"></svg>
         </div>
-        <div style="position: fixed; bottom: 30px; right: 30px;">
+
+        <!-- HUD bottom-right -->
+        <div class="hud">
             <span class="zoom-info" id="zoom-level">100%</span>
-            <button class="btn" onclick="zoomIn()">
+            <button class="btn" onclick="zoomStep(0.15)" title="Zoom In">
                 <svg width="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
-                Zoom In
             </button>
-            <button class="btn" onclick="zoomOut()">
+            <button class="btn" onclick="zoomStep(-0.15)" title="Zoom Out">
                 <svg width="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
-                Zoom Out
             </button>
-            <button class="btn" onclick="zoomReset()">
+            <button class="btn" onclick="fitView()" title="Fit all">
                 <svg width="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
                 Fit
             </button>
         </div>
+
+        <div class="hint-bar">Scroll to pan &nbsp;·&nbsp; Ctrl/⌘+Scroll to zoom &nbsp;·&nbsp; Drag empty space to pan</div>
     </div>
 </div>
 
 <script>
-// ─── State ────────────────────────────────────────────────────────────────────
-var entityElements = {};
-var zoomScale = 1;
-var isDragging = false;
-var dragEntity = null;
-var dragOffsetX = 0, dragOffsetY = 0;
+// ═══════════════════════════════════════════════════════════════════════
+// VIEWPORT STATE
+// Single source of truth: panX, panY, zoom
+// Transform applied as: translate(panX, panY) scale(zoom)
+// Canvas point (cx,cy) → screen point (cx*zoom + panX, cy*zoom + panY)
+// Screen point (sx,sy) → canvas point ((sx-panX)/zoom, (sy-panY)/zoom)
+// ═══════════════════════════════════════════════════════════════════════
+var panX = 0, panY = 0, zoom = 1;
 
+// entity drag state
+var isDragging = false, dragEntity = null;
+var dragStartCX = 0, dragStartCY = 0;   // canvas-space mouse pos at drag start
+var dragStartEX = 0, dragStartEY = 0;   // entity canvas pos at drag start
+
+// canvas pan state (drag empty space / middle-mouse)
+var isPanning = false;
+var panMouseStartX = 0, panMouseStartY = 0;
+var panStartX = 0, panStartY = 0;
+
+var entityElements = {};
+
+// Layout constants
 var FIELD_HEIGHT  = 28;
 var HEADER_HEIGHT = 42;
 var PADDING_BOT   = 8;
@@ -292,7 +359,27 @@ var GAP_X = 80, GAP_Y = 60;
 var START_X = 60, START_Y = 60;
 var CANVAS_W = 4000, CANVAS_H = 3000;
 
-// ─── Icons ────────────────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════════
+// TRANSFORM HELPERS
+// ═══════════════════════════════════════════════════════════════════════
+function applyTransform() {
+    document.getElementById('zoom-wrapper').style.transform =
+        'translate(' + panX + 'px,' + panY + 'px) scale(' + zoom + ')';
+    document.getElementById('zoom-level').textContent = Math.round(zoom * 100) + '%';
+}
+
+// screen coords (relative to panel top-left) → canvas coords
+function screenToCanvas(sx, sy) {
+    var r = document.getElementById('canvas-panel').getBoundingClientRect();
+    return {
+        x: (sx - r.left - panX) / zoom,
+        y: (sy - r.top  - panY) / zoom
+    };
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// ICONS
+// ═══════════════════════════════════════════════════════════════════════
 var ICONS = {
     user: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>',
     users: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>',
@@ -302,7 +389,9 @@ var ICONS = {
     mail: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>'
 };
 
-// ─── Parser ───────────────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════════
+// PARSER
+// ═══════════════════════════════════════════════════════════════════════
 function parseERD(text) {
     var entities = {}, relationships = [];
     var lines = text.split('\n');
@@ -350,7 +439,9 @@ function parseERD(text) {
     return { entities: entities, relationships: relationships };
 }
 
-// ─── Layout ───────────────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════════
+// LAYOUT
+// ═══════════════════════════════════════════════════════════════════════
 function getEntityHeight(entity) {
     return HEADER_HEIGHT + entity.fields.length * FIELD_HEIGHT + PADDING_BOT;
 }
@@ -394,7 +485,6 @@ function layoutEntities(entities, relationships) {
         var cols = bestCols(group.length);
         var colPositions = [];
         for (var c = 0; c < cols; c++) colPositions.push(START_X + c * (ENTITY_WIDTH + GAP_X));
-
         var rowStartY = curY, rowMaxH = 0;
         group.forEach(function(name, idx) {
             var col = idx % cols;
@@ -405,49 +495,60 @@ function layoutEntities(entities, relationships) {
         });
         curY = rowStartY + rowMaxH + GAP_Y * 2;
     });
-
     return positions;
 }
 
-function autoFitZoom(positions) {
-    var keys = Object.keys(positions);
+// ═══════════════════════════════════════════════════════════════════════
+// FIT VIEW — center + scale content to fill panel
+// ═══════════════════════════════════════════════════════════════════════
+function fitView() {
+    var keys = Object.keys(entityElements);
     if (keys.length === 0) return;
 
     var minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
     keys.forEach(function(k) {
-        var p = positions[k];
-        if (p.x < minX) minX = p.x;
-        if (p.y < minY) minY = p.y;
-        if (p.x + p.width  > maxX) maxX = p.x + p.width;
-        if (p.y + p.height > maxY) maxY = p.y + p.height;
+        var e = entityElements[k];
+        if (e.x            < minX) minX = e.x;
+        if (e.y            < minY) minY = e.y;
+        if (e.x + e.width  > maxX) maxX = e.x + e.width;
+        if (e.y + e.height > maxY) maxY = e.y + e.height;
     });
 
-    var contentW = maxX - minX + START_X * 2;
-    var contentH = maxY - minY + START_Y * 2;
-    var panel = document.querySelector('.canvas-panel');
-    var panelW = panel ? panel.clientWidth  : 800;
-    var panelH = panel ? panel.clientHeight : 600;
-    var scale = Math.min(panelW / contentW, panelH / contentH, 1);
-    scale = Math.max(scale, 0.25);
-    setZoom(scale);
+    var PAD = 60;
+    var contentW = maxX - minX + PAD * 2;
+    var contentH = maxY - minY + PAD * 2;
+
+    var panel = document.getElementById('canvas-panel');
+    var W = panel.clientWidth, H = panel.clientHeight;
+
+    zoom = Math.min(W / contentW, H / contentH, 1);
+    zoom = Math.max(zoom, 0.1);
+
+    // center the content bounding box in the panel
+    panX = (W - contentW * zoom) / 2 - (minX - PAD) * zoom;
+    panY = (H - contentH * zoom) / 2 - (minY - PAD) * zoom;
+
+    applyTransform();
 }
 
-// ─── Rendering ────────────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════════
+// RENDER ERD
+// ═══════════════════════════════════════════════════════════════════════
 function renderERD(text) {
     var parsed = parseERD(text);
     var entities = parsed.entities, relationships = parsed.relationships;
 
-    var canvas = document.getElementById('canvas');
-    var svg = document.getElementById('lines-svg');
+    var canvasEl = document.getElementById('canvas');
+    var svg      = document.getElementById('lines-svg');
     entityElements = {};
-    canvas.innerHTML = '';
+    canvasEl.innerHTML = '';
     svg.innerHTML = '';
 
     var positions = layoutEntities(entities, relationships);
 
     Object.keys(entities).forEach(function(name) {
         var entity = entities[name];
-        var pos = positions[name];
+        var pos    = positions[name];
         if (!pos) return;
 
         var color   = entity.meta.color || 'grey';
@@ -478,17 +579,24 @@ function renderERD(text) {
             '</div>' +
             '<div class="entity-fields">' + fieldsHTML + '</div>';
 
-        div.addEventListener('mousedown', function(e) { startDrag(e, name); });
-        canvas.appendChild(div);
+        // entity drag starts here, stopPropagation so canvas-pan doesn't trigger
+        div.addEventListener('mousedown', function(e) { startEntityDrag(e, name); });
+        canvasEl.appendChild(div);
 
-        entityElements[name] = { el: div, entity: entity, x: pos.x, y: pos.y, width: pos.width, height: pos.height };
+        entityElements[name] = {
+            el: div, entity: entity,
+            x: pos.x, y: pos.y,
+            width: pos.width, height: pos.height
+        };
     });
 
-    autoFitZoom(positions);
     drawRelationships(relationships);
+    fitView();
 }
 
-// ─── Field center Y ───────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════════
+// RELATIONSHIPS
+// ═══════════════════════════════════════════════════════════════════════
 function getFieldCenterY(entityName, fieldName) {
     var info = entityElements[entityName];
     if (!info) return null;
@@ -500,7 +608,6 @@ function getFieldCenterY(entityName, fieldName) {
     return info.y + info.height / 2;
 }
 
-// ─── Draw SVG lines ───────────────────────────────────────────────────────────
 function drawRelationships(relationships) {
     var svg = document.getElementById('lines-svg');
     var NS  = 'http://www.w3.org/2000/svg';
@@ -509,14 +616,10 @@ function drawRelationships(relationships) {
     var defs = document.createElementNS(NS, 'defs');
     function makeMarker(id, content) {
         var m = document.createElementNS(NS, 'marker');
-        m.setAttribute('id', id);
-        m.setAttribute('markerWidth', '12');
-        m.setAttribute('markerHeight', '10');
-        m.setAttribute('refX', '6');
-        m.setAttribute('refY', '5');
-        m.setAttribute('orient', 'auto-start-reverse');
-        m.innerHTML = content;
-        defs.appendChild(m);
+        m.setAttribute('id', id); m.setAttribute('markerWidth', '12');
+        m.setAttribute('markerHeight', '10'); m.setAttribute('refX', '6');
+        m.setAttribute('refY', '5'); m.setAttribute('orient', 'auto-start-reverse');
+        m.innerHTML = content; defs.appendChild(m);
     }
     makeMarker('mk-many',
         '<line x1="3" y1="1" x2="3" y2="9" stroke="#94a3b8" stroke-width="1.5"/>' +
@@ -538,19 +641,17 @@ function drawRelationships(relationships) {
         var toCX   = ti.x + ti.width / 2;
         var x1 = fromCX <= toCX ? fi.x + fi.width : fi.x;
         var x2 = fromCX <= toCX ? ti.x             : ti.x + ti.width;
-
         var dx = Math.abs(x2 - x1);
         var cp = Math.min(Math.max(dx * 0.5, 40), 180);
         var cx1 = fromCX <= toCX ? x1 + cp : x1 - cp;
         var cx2 = fromCX <= toCX ? x2 - cp : x2 + cp;
 
         var path = document.createElementNS(NS, 'path');
-        path.setAttribute('d', 'M ' + x1 + ' ' + y1 + ' C ' + cx1 + ' ' + y1 + ', ' + cx2 + ' ' + y2 + ', ' + x2 + ' ' + y2);
+        path.setAttribute('d', 'M'+x1+' '+y1+' C'+cx1+' '+y1+','+cx2+' '+y2+','+x2+' '+y2);
         path.setAttribute('stroke', '#94a3b8');
         path.setAttribute('stroke-width', '1.5');
         path.setAttribute('fill', 'none');
         path.setAttribute('stroke-linecap', 'round');
-
         if (rel.symbol === '<>') {
             path.setAttribute('marker-start', 'url(#mk-many)');
             path.setAttribute('marker-end',   'url(#mk-many)');
@@ -565,128 +666,155 @@ function drawRelationships(relationships) {
     });
 }
 
-// ─── Drag ─────────────────────────────────────────────────────────────────────
-function startDrag(e, name) {
+// ═══════════════════════════════════════════════════════════════════════
+// ENTITY DRAG
+// ═══════════════════════════════════════════════════════════════════════
+function startEntityDrag(e, name) {
     if (e.button !== 0) return;
+    e.stopPropagation();  // prevent canvas-pan from starting
     isDragging = true;
     dragEntity = name;
     var info = entityElements[name];
-    var wRect = document.getElementById('zoom-wrapper').getBoundingClientRect();
-    dragOffsetX = (e.clientX - wRect.left) / zoomScale - info.x;
-    dragOffsetY = (e.clientY - wRect.top)  / zoomScale - info.y;
+    var cp = screenToCanvas(e.clientX, e.clientY);
+    dragStartCX = cp.x; dragStartCY = cp.y;
+    dragStartEX = info.x; dragStartEY = info.y;
     info.el.classList.add('dragging');
-    document.addEventListener('mousemove', onDrag);
-    document.addEventListener('mouseup',   stopDrag);
+    document.addEventListener('mousemove', onEntityDrag);
+    document.addEventListener('mouseup',   stopEntityDrag);
     e.preventDefault();
 }
 
-function onDrag(e) {
+function onEntityDrag(e) {
     if (!isDragging || !dragEntity) return;
-    var info  = entityElements[dragEntity];
-    var wRect = document.getElementById('zoom-wrapper').getBoundingClientRect();
-    var newX  = (e.clientX - wRect.left) / zoomScale - dragOffsetX;
-    var newY  = (e.clientY - wRect.top)  / zoomScale - dragOffsetY;
-    newX = Math.max(0, Math.min(CANVAS_W - info.width,  newX));
-    newY = Math.max(0, Math.min(CANVAS_H - info.height, newY));
-    info.x = newX; info.y = newY;
-    info.el.style.left = newX + 'px';
-    info.el.style.top  = newY + 'px';
+    var info = entityElements[dragEntity];
+    var cp   = screenToCanvas(e.clientX, e.clientY);
+    var nx   = dragStartEX + (cp.x - dragStartCX);
+    var ny   = dragStartEY + (cp.y - dragStartCY);
+    nx = Math.max(0, Math.min(CANVAS_W - info.width,  nx));
+    ny = Math.max(0, Math.min(CANVAS_H - info.height, ny));
+    info.x = nx; info.y = ny;
+    info.el.style.left = nx + 'px';
+    info.el.style.top  = ny + 'px';
     drawRelationships(parseERD(document.getElementById('editor').value).relationships);
 }
 
-function stopDrag() {
+function stopEntityDrag() {
     isDragging = false;
     if (dragEntity && entityElements[dragEntity])
         entityElements[dragEntity].el.classList.remove('dragging');
     dragEntity = null;
-    document.removeEventListener('mousemove', onDrag);
-    document.removeEventListener('mouseup',   stopDrag);
+    document.removeEventListener('mousemove', onEntityDrag);
+    document.removeEventListener('mouseup',   stopEntityDrag);
 }
 
-// ─── Zoom ─────────────────────────────────────────────────────────────────────
-function setZoom(scale) {
-    zoomScale = Math.max(0.15, Math.min(4, scale));
-    var wrapper = document.getElementById('zoom-wrapper');
-    wrapper.style.transform = 'scale(' + zoomScale + ')';
-    wrapper.style.width  = CANVAS_W + 'px';
-    wrapper.style.height = CANVAS_H + 'px';
-    document.getElementById('zoom-level').textContent = Math.round(zoomScale * 100) + '%';
-}
+// ═══════════════════════════════════════════════════════════════════════
+// CANVAS PAN — drag on empty canvas space or middle-mouse anywhere
+// ═══════════════════════════════════════════════════════════════════════
+var canvasPanel = document.getElementById('canvas-panel');
 
-/*
- * Zoom toward a specific screen point (cursor position).
- * Adjusts scroll so the point under cursor stays fixed.
- *
- * Math:
- *   canvasPoint = (screenPt - containerOrigin + scroll) / oldScale
- *   After new scale, we want that canvasPoint to be at same screenPt:
- *   newScroll = canvasPoint * newScale - (screenPt - containerOrigin)
- */
-function zoomAroundPoint(newScale, screenPt) {
-    newScale = Math.max(0.15, Math.min(4, newScale));
+canvasPanel.addEventListener('mousedown', function(e) {
+    // left-click on empty space OR middle-mouse anywhere → pan
+    if (e.button === 0 || e.button === 1) {
+        isPanning      = true;
+        panMouseStartX = e.clientX;
+        panMouseStartY = e.clientY;
+        panStartX      = panX;
+        panStartY      = panY;
+        canvasPanel.style.cursor = 'grabbing';
+        e.preventDefault();
+    }
+});
 
-    var container = document.getElementById('canvas-container');
-    var cRect     = container.getBoundingClientRect();
+document.addEventListener('mousemove', function(e) {
+    if (!isPanning) return;
+    panX = panStartX + (e.clientX - panMouseStartX);
+    panY = panStartY + (e.clientY - panMouseStartY);
+    applyTransform();
+});
 
-    // Canvas-space coordinate under the cursor (before scale change)
-    var canvasX = (screenPt.x - cRect.left + container.scrollLeft) / zoomScale;
-    var canvasY = (screenPt.y - cRect.top  + container.scrollTop)  / zoomScale;
+document.addEventListener('mouseup', function(e) {
+    if (isPanning && (e.button === 0 || e.button === 1)) {
+        isPanning = false;
+        canvasPanel.style.cursor = '';
+    }
+});
 
-    // Apply new scale
-    zoomScale = newScale;
-    var wrapper = document.getElementById('zoom-wrapper');
-    wrapper.style.transform = 'scale(' + zoomScale + ')';
-    wrapper.style.width  = CANVAS_W + 'px';
-    wrapper.style.height = CANVAS_H + 'px';
-    document.getElementById('zoom-level').textContent = Math.round(zoomScale * 100) + '%';
-
-    // Scroll so that same canvas point stays under cursor
-    container.scrollLeft = canvasX * zoomScale - (screenPt.x - cRect.left);
-    container.scrollTop  = canvasY * zoomScale - (screenPt.y - cRect.top);
-}
-
-function zoomIn()    { zoomAroundPoint(zoomScale + 0.1, { x: getCenterX(), y: getCenterY() }); }
-function zoomOut()   { zoomAroundPoint(zoomScale - 0.1, { x: getCenterX(), y: getCenterY() }); }
-function zoomReset() { renderERD(document.getElementById('editor').value); }
-
-function getCenterX() {
-    var r = document.querySelector('.canvas-panel').getBoundingClientRect();
-    return r.left + r.width  / 2;
-}
-function getCenterY() {
-    var r = document.querySelector('.canvas-panel').getBoundingClientRect();
-    return r.top  + r.height / 2;
-}
-
-// Mouse wheel — plain scroll zooms (no modifier needed), toward cursor
-document.getElementById('canvas-container').addEventListener('wheel', function(e) {
+// ═══════════════════════════════════════════════════════════════════════
+// WHEEL EVENTS
+// scroll (no modifier) → PAN
+// Ctrl / Cmd + scroll  → ZOOM toward cursor
+// Shift + scroll       → horizontal pan
+// ═══════════════════════════════════════════════════════════════════════
+canvasPanel.addEventListener('wheel', function(e) {
     e.preventDefault();
-    // Normalize: trackpads give tiny deltas, mice give large ones
-    var delta = e.deltaY;
-    var step  = Math.abs(delta) > 50 ? 0.12 : 0.05;
-    var dir   = delta > 0 ? -1 : 1;
-    zoomAroundPoint(zoomScale + dir * step, { x: e.clientX, y: e.clientY });
+
+    if (e.ctrlKey || e.metaKey) {
+        // ── ZOOM toward cursor ────────────────────────────────────────
+        var delta   = e.deltaY;
+        var factor  = Math.abs(delta) > 50 ? 0.12 : 0.05; // mouse vs trackpad
+        var dir     = delta > 0 ? -1 : 1;
+        var newZoom = Math.max(0.08, Math.min(5, zoom + dir * factor));
+
+        // canvas point under cursor must stay fixed
+        var r  = canvasPanel.getBoundingClientRect();
+        var sx = e.clientX - r.left;   // screen coords relative to panel
+        var sy = e.clientY - r.top;
+        // canvas point: (sx - panX) / zoom  stays constant
+        var cx = (sx - panX) / zoom;
+        var cy = (sy - panY) / zoom;
+
+        zoom = newZoom;
+        panX = sx - cx * zoom;
+        panY = sy - cy * zoom;
+        applyTransform();
+
+    } else {
+        // ── PAN ───────────────────────────────────────────────────────
+        var dx = e.deltaX || 0;
+        var dy = e.deltaY || 0;
+
+        // Shift+vertical scroll → horizontal pan (standard Mac/browser convention)
+        if (e.shiftKey && !e.deltaX) { dx = dy; dy = 0; }
+
+        // Invert because we're moving content in same direction as finger/wheel
+        panX -= dx;
+        panY -= dy;
+        applyTransform();
+    }
 }, { passive: false });
 
-// ─── Export Text ──────────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════════
+// ZOOM STEP BUTTONS (zoom around panel center)
+// ═══════════════════════════════════════════════════════════════════════
+function zoomStep(delta) {
+    var panel   = document.getElementById('canvas-panel');
+    var newZoom = Math.max(0.08, Math.min(5, zoom + delta));
+    var cx      = panel.clientWidth  / 2;
+    var cy      = panel.clientHeight / 2;
+    // canvas point at center stays fixed
+    var ccx = (cx - panX) / zoom;
+    var ccy = (cy - panY) / zoom;
+    zoom = newZoom;
+    panX = cx - ccx * zoom;
+    panY = cy - ccy * zoom;
+    applyTransform();
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// EXPORT TEXT
+// ═══════════════════════════════════════════════════════════════════════
 function exportText() {
     var text = document.getElementById('editor').value;
     var blob = new Blob([text], { type: 'text/plain' });
     var url  = URL.createObjectURL(blob);
-    var a = document.createElement('a');
+    var a    = document.createElement('a');
     a.href = url; a.download = 'erd.txt'; a.click();
     URL.revokeObjectURL(url);
 }
 
-// ─── Export PNG ───────────────────────────────────────────────────────────────
-/*
- * Pure canvas 2D drawing — no external library.
- * 1. Compute bounding box of all nodes.
- * 2. Draw dot-grid background.
- * 3. Draw bezier relationship lines.
- * 4. Draw entity boxes (rounded rect, header, fields, PK badges).
- * 5. toBlob → download.
- */
+// ═══════════════════════════════════════════════════════════════════════
+// EXPORT PNG — pure canvas 2D, no library
+// ═══════════════════════════════════════════════════════════════════════
 var COLOR_SCHEMES = {
     blue:   { border: '#3b82f6', header: '#eff6ff', text: '#3b82f6' },
     green:  { border: '#22c55e', header: '#f0fdf4', text: '#22c55e' },
@@ -701,60 +829,46 @@ function exportPNG() {
     var keys = Object.keys(entityElements);
     if (keys.length === 0) { alert('Nothing to export — add some tables first!'); return; }
 
-    // 1. Bounding box
     var PAD = 60;
     var minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
     keys.forEach(function(k) {
         var e = entityElements[k];
-        if (e.x            < minX) minX = e.x;
-        if (e.y            < minY) minY = e.y;
-        if (e.x + e.width  > maxX) maxX = e.x + e.width;
-        if (e.y + e.height > maxY) maxY = e.y + e.height;
+        if (e.x           < minX) minX = e.x;
+        if (e.y           < minY) minY = e.y;
+        if (e.x + e.width > maxX) maxX = e.x + e.width;
+        if (e.y + e.height> maxY) maxY = e.y + e.height;
     });
 
-    var W  = maxX - minX + PAD * 2;
-    var H  = maxY - minY + PAD * 2;
-    var ox = minX - PAD;   // origin shift: canvas coord → image coord
-    var oy = minY - PAD;
+    var W = maxX - minX + PAD * 2;
+    var H = maxY - minY + PAD * 2;
+    var ox = minX - PAD, oy = minY - PAD;
 
-    // 2. Offscreen canvas @ 2× for retina
     var DPR = 2;
     var cv  = document.createElement('canvas');
-    cv.width  = W * DPR;
-    cv.height = H * DPR;
+    cv.width = W * DPR; cv.height = H * DPR;
     var ctx = cv.getContext('2d');
     ctx.scale(DPR, DPR);
 
-    // 3. Background + dot grid
-    ctx.fillStyle = '#f0f2f5';
-    ctx.fillRect(0, 0, W, H);
-    var GRID = 24;
+    // background
+    ctx.fillStyle = '#f0f2f5'; ctx.fillRect(0, 0, W, H);
     ctx.fillStyle = '#c8cdd6';
-    for (var gx = 0; gx <= W; gx += GRID) {
-        for (var gy = 0; gy <= H; gy += GRID) {
-            ctx.beginPath();
-            ctx.arc(gx, gy, 1, 0, Math.PI * 2);
-            ctx.fill();
+    for (var gx = 0; gx <= W; gx += 24)
+        for (var gy = 0; gy <= H; gy += 24) {
+            ctx.beginPath(); ctx.arc(gx, gy, 1, 0, Math.PI * 2); ctx.fill();
         }
-    }
 
-    // 4. Relationship lines
+    // lines
     var parsed = parseERD(document.getElementById('editor').value);
-    ctx.strokeStyle = '#94a3b8';
-    ctx.lineWidth   = 1.5;
-    ctx.lineCap     = 'round';
+    ctx.strokeStyle = '#94a3b8'; ctx.lineWidth = 1.5; ctx.lineCap = 'round';
 
     parsed.relationships.forEach(function(rel) {
         var fi = entityElements[rel.fromTable];
         var ti = entityElements[rel.toTable];
         if (!fi || !ti) return;
-
         var y1 = getFieldCenterY(rel.fromTable, rel.fromField);
         var y2 = getFieldCenterY(rel.toTable,   rel.toField);
         if (y1 === null || y2 === null) return;
-
-        var fromCX = fi.x + fi.width / 2;
-        var toCX   = ti.x + ti.width / 2;
+        var fromCX = fi.x + fi.width / 2, toCX = ti.x + ti.width / 2;
         var x1 = fromCX <= toCX ? fi.x + fi.width : fi.x;
         var x2 = fromCX <= toCX ? ti.x             : ti.x + ti.width;
         var dx = Math.abs(x2 - x1);
@@ -762,196 +876,98 @@ function exportPNG() {
         var cx1 = fromCX <= toCX ? x1 + cp : x1 - cp;
         var cx2 = fromCX <= toCX ? x2 - cp : x2 + cp;
 
-        // Bezier
         ctx.beginPath();
-        ctx.moveTo(x1 - ox, y1 - oy);
-        ctx.bezierCurveTo(cx1 - ox, y1 - oy, cx2 - ox, y2 - oy, x2 - ox, y2 - oy);
+        ctx.moveTo(x1-ox, y1-oy);
+        ctx.bezierCurveTo(cx1-ox, y1-oy, cx2-ox, y2-oy, x2-ox, y2-oy);
         ctx.stroke();
 
-        // Arrow tick markers (simple chevrons)
-        function drawChevron(px, py, pointRight) {
-            var s = 7, d = pointRight ? -1 : 1;
-            ctx.beginPath();
-            ctx.moveTo(px - ox + d * s, py - oy - s);
-            ctx.lineTo(px - ox,         py - oy);
-            ctx.lineTo(px - ox + d * s, py - oy + s);
-            ctx.stroke();
-            // second tick for "many"
-            ctx.beginPath();
-            ctx.moveTo(px - ox + d * (s + 5), py - oy - s);
-            ctx.lineTo(px - ox + d * 5,        py - oy);
-            ctx.lineTo(px - ox + d * (s + 5), py - oy + s);
-            ctx.stroke();
+        function chevron(px, py, pointRight) {
+            var s=7, d=pointRight?-1:1;
+            ctx.beginPath(); ctx.moveTo(px-ox+d*s,py-oy-s); ctx.lineTo(px-ox,py-oy); ctx.lineTo(px-ox+d*s,py-oy+s); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(px-ox+d*(s+5),py-oy-s); ctx.lineTo(px-ox+d*5,py-oy); ctx.lineTo(px-ox+d*(s+5),py-oy+s); ctx.stroke();
         }
-        function drawOneTick(px, py, pointRight) {
-            var d = pointRight ? -1 : 1;
-            ctx.beginPath();
-            ctx.moveTo(px - ox + d * 6, py - oy - 6);
-            ctx.lineTo(px - ox + d * 6, py - oy + 6);
-            ctx.stroke();
+        function tick(px, py, pointRight) {
+            var d=pointRight?-1:1;
+            ctx.beginPath(); ctx.moveTo(px-ox+d*6,py-oy-6); ctx.lineTo(px-ox+d*6,py-oy+6); ctx.stroke();
         }
-
-        var leftToRight = fromCX <= toCX;
-        if (rel.symbol === '>' || rel.symbol === '<>') {
-            drawChevron(x2, y2, leftToRight);
-        }
-        if (rel.symbol === '<' || rel.symbol === '<>') {
-            drawChevron(x1, y1, !leftToRight);
-        }
-        if (rel.symbol === '>') drawOneTick(x1, y1, !leftToRight);
-        if (rel.symbol === '<') drawOneTick(x2, y2,  leftToRight);
+        var ltr = fromCX <= toCX;
+        if (rel.symbol==='>'||rel.symbol==='<>') chevron(x2,y2,ltr);
+        if (rel.symbol==='<'||rel.symbol==='<>') chevron(x1,y1,!ltr);
+        if (rel.symbol==='>') tick(x1,y1,!ltr);
+        if (rel.symbol==='<') tick(x2,y2, ltr);
     });
 
-    // 5. Entity boxes
-    var R = 10; // border radius
-
-    function roundRect(x, y, w, h) {
-        ctx.beginPath();
-        ctx.moveTo(x + R, y);
-        ctx.lineTo(x + w - R, y);
-        ctx.arcTo(x + w, y, x + w, y + R, R);
-        ctx.lineTo(x + w, y + h - R);
-        ctx.arcTo(x + w, y + h, x + w - R, y + h, R);
-        ctx.lineTo(x + R, y + h);
-        ctx.arcTo(x, y + h, x, y + h - R, R);
-        ctx.lineTo(x, y + R);
-        ctx.arcTo(x, y, x + R, y, R);
-        ctx.closePath();
+    // entity boxes
+    var R = 10;
+    function rr(x,y,w,h) {
+        ctx.beginPath(); ctx.moveTo(x+R,y); ctx.lineTo(x+w-R,y);
+        ctx.arcTo(x+w,y,x+w,y+R,R); ctx.lineTo(x+w,y+h-R);
+        ctx.arcTo(x+w,y+h,x+w-R,y+h,R); ctx.lineTo(x+R,y+h);
+        ctx.arcTo(x,y+h,x,y+h-R,R); ctx.lineTo(x,y+R);
+        ctx.arcTo(x,y,x+R,y,R); ctx.closePath();
     }
 
     keys.forEach(function(name) {
         var info   = entityElements[name];
         var scheme = COLOR_SCHEMES[info.entity.meta.color] || COLOR_SCHEMES['grey'];
-        var x = info.x - ox;
-        var y = info.y - oy;
-        var w = info.width;
-        var h = info.height;
+        var x=info.x-ox, y=info.y-oy, w=info.width, h=info.height;
 
-        // Drop shadow
-        ctx.save();
-        ctx.shadowColor   = 'rgba(0,0,0,0.13)';
-        ctx.shadowBlur    = 12;
-        ctx.shadowOffsetY = 3;
-        roundRect(x, y, w, h);
-        ctx.fillStyle = '#ffffff';
-        ctx.fill();
-        ctx.restore();
+        ctx.save(); ctx.shadowColor='rgba(0,0,0,0.13)'; ctx.shadowBlur=12; ctx.shadowOffsetY=3;
+        rr(x,y,w,h); ctx.fillStyle='#fff'; ctx.fill(); ctx.restore();
 
-        // White body
-        roundRect(x, y, w, h);
-        ctx.fillStyle = '#ffffff';
-        ctx.fill();
+        rr(x,y,w,h); ctx.fillStyle='#fff'; ctx.fill();
+        rr(x,y,w,h); ctx.strokeStyle=scheme.border; ctx.lineWidth=2; ctx.stroke();
 
-        // Border
-        roundRect(x, y, w, h);
-        ctx.strokeStyle = scheme.border;
-        ctx.lineWidth   = 2;
-        ctx.stroke();
+        ctx.save(); ctx.beginPath();
+        ctx.moveTo(x+R,y); ctx.lineTo(x+w-R,y); ctx.arcTo(x+w,y,x+w,y+R,R);
+        ctx.lineTo(x+w,y+HEADER_HEIGHT); ctx.lineTo(x,y+HEADER_HEIGHT);
+        ctx.lineTo(x,y+R); ctx.arcTo(x,y,x+R,y,R); ctx.closePath();
+        ctx.fillStyle=scheme.header; ctx.fill(); ctx.restore();
 
-        // Header background (top-rounded only)
-        ctx.save();
-        ctx.beginPath();
-        ctx.moveTo(x + R, y);
-        ctx.lineTo(x + w - R, y);
-        ctx.arcTo(x + w, y, x + w, y + R, R);
-        ctx.lineTo(x + w, y + HEADER_HEIGHT);
-        ctx.lineTo(x, y + HEADER_HEIGHT);
-        ctx.lineTo(x, y + R);
-        ctx.arcTo(x, y, x + R, y, R);
-        ctx.closePath();
-        ctx.fillStyle = scheme.header;
-        ctx.fill();
-        ctx.restore();
+        ctx.beginPath(); ctx.moveTo(x,y+HEADER_HEIGHT); ctx.lineTo(x+w,y+HEADER_HEIGHT);
+        ctx.strokeStyle=scheme.border; ctx.lineWidth=1; ctx.stroke();
 
-        // Header bottom divider
-        ctx.beginPath();
-        ctx.moveTo(x, y + HEADER_HEIGHT);
-        ctx.lineTo(x + w, y + HEADER_HEIGHT);
-        ctx.strokeStyle = scheme.border;
-        ctx.lineWidth   = 1;
-        ctx.stroke();
+        ctx.textBaseline='middle'; ctx.textAlign='left';
+        ctx.fillStyle=scheme.text; ctx.font='bold 13px -apple-system,Arial,sans-serif';
+        ctx.fillText(name, x+36, y+HEADER_HEIGHT/2);
 
-        // Entity name text
-        ctx.textBaseline = 'middle';
-        ctx.textAlign    = 'left';
-        ctx.fillStyle    = scheme.text;
-        ctx.font         = 'bold 13px -apple-system, BlinkMacSystemFont, Arial, sans-serif';
-        ctx.fillText(name, x + 36, y + HEADER_HEIGHT / 2);
-
-        // Fields
-        var fy = y + HEADER_HEIGHT;
-        info.entity.fields.forEach(function(f, idx) {
-            var cy = fy + FIELD_HEIGHT / 2;
-
-            // Zebra stripe (subtle)
-            if (idx % 2 === 1) {
-                ctx.fillStyle = 'rgba(0,0,0,0.015)';
-                ctx.fillRect(x + 1, fy, w - 2, FIELD_HEIGHT);
-            }
-
-            // Field name
-            ctx.fillStyle    = '#1a202c';
-            ctx.font         = (f.pk ? '600 ' : '500 ') + '11.5px "SF Mono", Menlo, monospace';
-            ctx.textAlign    = 'left';
-            ctx.textBaseline = 'middle';
-            ctx.fillText(f.name, x + 14, cy);
-
-            // PK badge
-            if (f.pk) {
-                var nameW   = ctx.measureText(f.name).width;
-                var badgeX  = x + 14 + nameW + 5;
-                var badgeW  = 24;
-                var badgeH  = 13;
-                var badgeY  = cy - badgeH / 2;
-                ctx.fillStyle   = '#fef3c7';
-                ctx.strokeStyle = '#fbbf24';
-                ctx.lineWidth   = 0.8;
-                ctx.beginPath();
-                ctx.roundRect ? ctx.roundRect(badgeX, badgeY, badgeW, badgeH, 3)
-                              : ctx.rect(badgeX, badgeY, badgeW, badgeH);
+        var fy=y+HEADER_HEIGHT;
+        info.entity.fields.forEach(function(f,idx) {
+            var cy=fy+FIELD_HEIGHT/2;
+            if(idx%2===1){ctx.fillStyle='rgba(0,0,0,0.015)';ctx.fillRect(x+1,fy,w-2,FIELD_HEIGHT);}
+            ctx.fillStyle='#1a202c'; ctx.font=(f.pk?'600 ':'500 ')+'11.5px "SF Mono",Menlo,monospace';
+            ctx.textAlign='left'; ctx.textBaseline='middle'; ctx.fillText(f.name,x+14,cy);
+            if(f.pk){
+                var bx=x+14+ctx.measureText(f.name).width+5,bw=24,bh=13,by=cy-bh/2;
+                ctx.fillStyle='#fef3c7'; ctx.strokeStyle='#fbbf24'; ctx.lineWidth=0.8;
+                ctx.beginPath(); ctx.roundRect?ctx.roundRect(bx,by,bw,bh,3):ctx.rect(bx,by,bw,bh);
                 ctx.fill(); ctx.stroke();
-                ctx.fillStyle    = '#92400e';
-                ctx.font         = 'bold 8px Arial, sans-serif';
-                ctx.textAlign    = 'center';
-                ctx.textBaseline = 'middle';
-                ctx.fillText('PK', badgeX + badgeW / 2, cy);
+                ctx.fillStyle='#92400e'; ctx.font='bold 8px Arial,sans-serif';
+                ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText('PK',bx+bw/2,cy);
             }
-
-            // Field type (right side)
-            ctx.fillStyle    = '#718096';
-            ctx.font         = '11px "SF Mono", Menlo, monospace';
-            ctx.textAlign    = 'right';
-            ctx.textBaseline = 'middle';
-            ctx.fillText(f.type, x + w - 14, cy);
-
-            // Row line
-            if (idx < info.entity.fields.length - 1) {
-                ctx.beginPath();
-                ctx.moveTo(x + 1, fy + FIELD_HEIGHT);
-                ctx.lineTo(x + w - 1, fy + FIELD_HEIGHT);
-                ctx.strokeStyle = '#f0f0f0';
-                ctx.lineWidth   = 0.5;
-                ctx.stroke();
+            ctx.fillStyle='#718096'; ctx.font='11px "SF Mono",Menlo,monospace';
+            ctx.textAlign='right'; ctx.textBaseline='middle'; ctx.fillText(f.type,x+w-14,cy);
+            if(idx<info.entity.fields.length-1){
+                ctx.beginPath(); ctx.moveTo(x+1,fy+FIELD_HEIGHT); ctx.lineTo(x+w-1,fy+FIELD_HEIGHT);
+                ctx.strokeStyle='#f0f0f0'; ctx.lineWidth=0.5; ctx.stroke();
             }
-
-            fy += FIELD_HEIGHT;
+            fy+=FIELD_HEIGHT;
         });
     });
 
-    // 6. Trigger download
     cv.toBlob(function(blob) {
-        var url = URL.createObjectURL(blob);
-        var a   = document.createElement('a');
-        a.href     = url;
-        a.download = 'erd-diagram.png';
-        document.body.appendChild(a);
-        a.click();
+        var url=URL.createObjectURL(blob);
+        var a=document.createElement('a');
+        a.href=url; a.download='erd-diagram.png';
+        document.body.appendChild(a); a.click();
         document.body.removeChild(a);
-        setTimeout(function() { URL.revokeObjectURL(url); }, 1000);
+        setTimeout(function(){URL.revokeObjectURL(url);},1000);
     }, 'image/png');
 }
 
-// ─── Boot ─────────────────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════════
+// BOOT
+// ═══════════════════════════════════════════════════════════════════════
 var defaultText =
 `users [icon: user, color: blue] {
   id string pk
@@ -1000,8 +1016,6 @@ invite.inviterId > users.id`;
 
 var editor = document.getElementById('editor');
 editor.value = defaultText;
-
-setZoom(1);
 
 var debounceTimer;
 editor.addEventListener('input', function() {
