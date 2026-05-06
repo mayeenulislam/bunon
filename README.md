@@ -1,4 +1,4 @@
-<img src="logo-white.png" width="80" />
+<img width="80" height="80" alt="Image" src="https://github.com/user-attachments/assets/ded0934d-8cc7-4e2e-890a-1f543ac09ead" />
 
 # BUNON — ERD Visualizer
 
