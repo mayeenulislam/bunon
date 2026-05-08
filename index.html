@@ -175,7 +175,7 @@ body {
     position: absolute;
     top: 0; left: 0; right: 0; bottom: 0;
     padding: 12px;
-    font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
+    font-family: 'JetBrains Mono', 'Menlo', 'Courier New', monospace;
     font-size: 13px;
     line-height: 1.6;
     tab-size: 2;
@@ -202,7 +202,7 @@ body {
     border: none;
     outline: none;
     resize: none;
-    font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
+    font-family: 'JetBrains Mono', 'Menlo', 'Courier New', monospace;
     font-size: 13px;
     line-height: 1.6;
     tab-size: 2;
@@ -265,7 +265,8 @@ body {
     background-color: #333;
     border-top: 1px solid #666;
     padding: 5px;
-    text-align: right;
+    display: flex;
+    justify-content: space-between;
     flex-shrink: 0;
 }
 
@@ -341,7 +342,7 @@ body {
     gap: 6px;
     padding: 5px 14px;
     font-size: 12px;
-    font-family: "SF Mono", "Fira Code", "Menlo", monospace;
+    font-family: 'JetBrains Mono', 'Menlo', 'Courier New', monospace;
     position: relative;
     height: 28px;
     border-bottom: 1px solid #ededed;
@@ -526,6 +527,121 @@ body {
 .dropdown-btn svg { flex-shrink: 0; color: var(--text-dim); }
 .dropdown-btn.danger { color: #fc8181; }
 .dropdown-btn.danger svg { color: #fc8181; }
+
+#info-modal {
+    position: fixed;
+    background-color: var(--text);
+    color: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 30px 5px 30px 30px;
+    width: 90%;
+    max-width: 450px;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+}
+
+/* Centering & Backdrop Logic */
+#info-modal::backdrop {
+    background: rgba(10, 10, 15, 0.8);
+    backdrop-filter: blur(4px);
+}
+
+.info-modal-heading {
+    font-size: 1.2rem;
+    margin-bottom: 20px;
+}
+
+.btn-close {
+    position: absolute;
+    background-color: transparent;
+    padding: 5px;
+    border: none;
+    color: var(--bg);
+    top: 10px;
+    right: 10px;
+    cursor: pointer;
+}
+
+.btn-close:hover {
+    color: var(--accent);
+  }
+
+.modal-body {
+    padding-right: 20px;
+    max-height: 70vh;
+    overflow-y: auto;
+  }
+
+  #info-modal section {
+    margin-bottom: 24px;
+  }
+
+  #info-modal h3 {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--accent);
+    margin-bottom: 12px;
+  }
+
+  #info-modal p {
+    font-size: 0.8rem;
+    margin-bottom: 5px;
+  }
+
+  #info-modal code {
+    font-family: 'JetBrains Mono', 'Menlo', 'Courier New', monospace;
+    font-size: 0.8rem;
+    color: #111;
+  }
+
+  #info-modal pre {
+    background: var(--bg);
+    padding: 8px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    font-size: 0.85rem;
+    line-height: 1.2;
+    margin-top: 8px;
+    margin-bottom: 8px;
+    color: var(--text-dim);
+  }
+
+  #info-modal hr {
+    margin-top: 10px;
+    margin-bottom: 10px;
+  }
+
+  #info-modal table {
+    /* width: 100%; */
+    border-collapse: collapse;
+    margin-top: 8px;
+  }
+
+  #info-modal td {
+    padding: 1px 5px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    font-size: 0.8rem;
+  }
+
+  #info-modal .symbol-col {
+    width: 60px;
+    font-weight: bold;
+  }
+
+  #info-modal ul {
+    list-style: square;
+    padding-left: 18px;
+    font-size: 0.8rem;
+  }
+
+  #info-modal small {
+    color: var(--text-dim);
+    font-style: italic;
+  }
 </style>
 </head>
 <body>
@@ -569,6 +685,13 @@ body {
             <textarea id="editor" placeholder="Write ERD Code here..." spellcheck="false" autocomplete="off" autocorrect="off" autocapitalize="off"></textarea>
         </div>
         <div class="editor-footer">
+            <button type="button" class="btn" id="openInfo-modal">
+                <svg xmlns="http://w3.org" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="16" x2="12" y2="12"></line>
+                    <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                </svg>
+            </button>
             <button class="btn" onclick="exportText()">
                 <svg width="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>
                 Export as Text
@@ -614,6 +737,77 @@ body {
         </button>
     </div>
 </div>
+
+<dialog id="info-modal">
+  <h2 class="info-modal-heading">Syntax Guidelines</h2>
+
+  <div class="modal-body">
+    <!-- Field Syntax -->
+    <section>
+      <h3>Field Definition</h3>
+      <pre>fieldName fieldType [pk]</pre>
+      <p><small>Example: <code>id string pk</code></small></p>
+    </section>
+
+    <hr>
+
+    <!-- Metadata -->
+    <section>
+      <h3>Entity Metadata</h3>
+      <pre>EntityName [icon: name, color: value]</pre>
+      <ul>
+        <li><strong>Icons:</strong> user, users, home, folder, message-circle, mail</li>
+        <li><strong>Colors:</strong> blue, green, red, grey, purple, orange</li>
+      </ul>
+    </section>
+
+    <hr>
+
+    <!-- Relationships -->
+    <section>
+      <h3>Relationships</h3>
+      <pre>fromTable.field &lt;symbol&gt; toTable.field</pre>
+      <table>
+        <tr>
+          <td style="color: var(--accent)">&lt;&gt;</td>
+          <td>Many to Many</td>
+        </tr>
+        <tr>
+          <td style="color: var(--accent)">&gt;</td>
+          <td>Many to One</td>
+        </tr>
+        <tr>
+          <td style="color: var(--accent)">&lt;</td>
+          <td>One to Many</td>
+        </tr>
+      </table>
+    </section>
+
+    <hr>
+
+    <!-- Global Properties -->
+    <section>
+      <h3>Global Settings</h3>
+      <pre>
+colorMode pastel
+styleMode default
+notation crowfoot
+title My Diagram</pre>
+    </section>
+
+    <!-- Comments -->
+    <section>
+      <p><small><em>// Use double slashes for comments.</em></small></p>
+    </section>
+  </div>
+
+  <button id="close-modal" class="btn-close" autofocus aria-label="Close Modal">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://w3.org">
+      <line x1="18" y1="6" x2="6" y2="18" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+      <line x1="6" y1="6" x2="18" y2="18" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+    </svg>
+  </button>
+</dialog>
 
 <script>
 // ═══════════════════════════════════════════════════════════════════════
@@ -1733,10 +1927,10 @@ function exportPNG() {
         info.entity.fields.forEach(function(f,idx) {
             var cy=fy+FIELD_HEIGHT/2;
             if(idx%2===1){ctx.fillStyle='rgba(0,0,0,0.015)';ctx.fillRect(x+1,fy,w-2,FIELD_HEIGHT);}
-            ctx.fillStyle='#1a202c'; ctx.font=(f.pk?'600 ':'500 ')+'11.5px "SF Mono",Menlo,monospace';
+            ctx.fillStyle='#1a202c'; ctx.font=(f.pk?'600 ':'500 ')+'11.5px "JetBrains Mono",Menlo,"Courier New",monospace';
             ctx.textAlign='left'; ctx.textBaseline='middle'; ctx.fillText(f.name,x+14,cy);
             if(f.pk){ var bx=x+14+ctx.measureText(f.name).width+5,bw=24,bh=13,by=cy-bh/2; ctx.fillStyle='#fef3c7'; ctx.strokeStyle='#fbbf24'; ctx.lineWidth=0.8; ctx.beginPath(); ctx.roundRect?ctx.roundRect(bx,by,bw,bh,3):ctx.rect(bx,by,bw,bh); ctx.fill(); ctx.stroke(); ctx.fillStyle='#92400e'; ctx.font='bold 8px Arial,sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText('PK',bx+bw/2,cy); }
-            ctx.fillStyle='#718096'; ctx.font='11px "SF Mono",Menlo,monospace'; ctx.textAlign='right'; ctx.textBaseline='middle'; ctx.fillText(f.type,x+w-14,cy);
+            ctx.fillStyle='#718096'; ctx.font='11px "JetBrains Mono",Menlo,"Courier New",monospace'; ctx.textAlign='right'; ctx.textBaseline='middle'; ctx.fillText(f.type,x+w-14,cy);
             if(idx<info.entity.fields.length-1){ ctx.beginPath(); ctx.moveTo(x+1,fy+FIELD_HEIGHT); ctx.lineTo(x+w-1,fy+FIELD_HEIGHT); ctx.strokeStyle='#f0f0f0'; ctx.lineWidth=0.5; ctx.stroke(); }
             fy+=FIELD_HEIGHT;
         });
@@ -1847,6 +2041,21 @@ const editorPanel = document.querySelector('.editor-panel');
 
 toggleBtn.addEventListener('click', () => {
     editorPanel.classList.toggle('collapsed');
+});
+
+// Info modal
+const modal = document.getElementById('info-modal');
+const openBtn = document.getElementById('openInfo-modal');
+const closeBtn = document.getElementById('close-modal');
+
+// Opens the dialog as a modal (with backdrop)
+openBtn.addEventListener('click', () => {
+    modal.showModal();
+});
+
+// Closes the dialog
+closeBtn.addEventListener('click', () => {
+    modal.close();
 });
 </script>
 </body>
