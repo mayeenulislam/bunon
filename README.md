@@ -1,8 +1,8 @@
 <img width="80" height="80" alt="Image" src="https://github.com/user-attachments/assets/ded0934d-8cc7-4e2e-890a-1f543ac09ead" />
 
-# BUNON — ERD Visualizer
+# BŪNŌN — ERD Visualizer
 
-BUNON is a zero-dependency, client-side ERD visualizer that runs entirely in the browser. No build tools, no server, no npm — just open `index.html` and start designing.
+BŪNŌN is a zero-dependency, client-side ERD visualizer that runs entirely in the browser. No build tools, no server, no npm — just open `index.html` and start designing.
 
 Built with the help of AI with human supervision and modification
 

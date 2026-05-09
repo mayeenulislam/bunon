@@ -1,6 +1,6 @@
-# Contributing to BUNON
+# Contributing to BŪNŌN
 
-Thank you for your interest in contributing to BUNON! This guide will help you get started.
+Thank you for your interest in contributing to BŪNŌN! This guide will help you get started.
 
 ## Code of Conduct
 
@@ -18,7 +18,7 @@ There are many ways to contribute:
 
 ## Project Structure
 
-BUNON is a **single-file application**. Everything lives in `index.html`:
+BŪNŌN is a **single-file application**. Everything lives in `index.html`:
 
 ```
 index.html  ← HTML structure + CSS styles + JavaScript logic
@@ -51,7 +51,7 @@ Test your changes by:
 
 ### 3. Keep It Simple
 
-- **No new dependencies.** BUNON is proudly zero-dependency.
+- **No new dependencies.** BŪNŌN is proudly zero-dependency.
 - **Maintain backward compatibility.** Don't break the existing ERD syntax.
 - **Preserve existing comments and code.** Only remove code if it's truly unused or buggy.
 - **Test in multiple browsers** when making CSS or JS changes.
@@ -109,7 +109,7 @@ For feature suggestions:
 
 1. Check existing issues first to avoid duplicates
 2. Describe the feature and its use case
-3. Explain why it would be valuable to BUNON users
+3. Explain why it would be valuable to BŪNŌN users
 4. Consider the zero-dependency philosophy — can it be done without external libs?
 
 ## Questions?
@@ -118,4 +118,4 @@ Open an issue with your question — we're happy to help!
 
 ---
 
-Thank you for contributing to BUNON! 🚀
+Thank you for contributing to BŪNŌN! 🚀

@@ -294,22 +294,6 @@ function highlightLine(line) {
     }
   }
 
-  var dpMatch = raw.match(
-    /^(\s*)(colorMode|styleMode|typeface|notation|title)(\s+)(.+)$/,
-  );
-  if (dpMatch) {
-    return (
-      escapeHTML(dpMatch[1]) +
-      '<span class="hl-prop-key">' +
-      escapeHTML(dpMatch[2]) +
-      "</span>" +
-      escapeHTML(dpMatch[3]) +
-      '<span class="hl-prop-val">' +
-      escapeHTML(dpMatch[4]) +
-      "</span>"
-    );
-  }
-
   var entityMatch = raw.match(/^(\s*)(\w+)(\s*)(\[[^\]]*\])?(\s*\{.*)$/);
   if (entityMatch && !raw.match(/^\s*\w+\.\w+\s*(<>|>|<|-)\s*\w+\.\w+/)) {
     var indent = escapeHTML(entityMatch[1]);
@@ -497,14 +481,6 @@ function parseERD(text) {
       continue;
     }
 
-    var dpMatch = trimmed.match(
-      /^(colorMode|styleMode|typeface|notation|title)\s+(.+)$/,
-    );
-    if (dpMatch) {
-      diagramProps[dpMatch[1]] = dpMatch[2];
-      continue;
-    }
-
     var rm = trimmed.match(
       /^(\w+)\.(\w+)\s*(<>|>|<|-)\s*(\w+)\.(\w+)(.*)$/,
     );
@@ -552,6 +528,12 @@ function parseERD(text) {
     legendItems: legendItems,
     diagramProps: diagramProps,
   };
+}
+
+function truncateMiddle(text, maxLen) {
+  if (text.length <= maxLen) return text;
+  var half = Math.floor((maxLen - 3) / 2);
+  return text.slice(0, half) + "..." + text.slice(text.length - half);
 }
 
 function getEntityHeight(entity) {
@@ -938,8 +920,10 @@ function renderERD(text, savedPositions) {
         '" data-fieldname="' +
         f.name +
         '">' +
-        '<span class="field-name">' +
-        f.name +
+        '<span class="field-name"' +
+        (f.name.length > 15 ? ' title="' + f.name + '"' : "") +
+        ">" +
+        truncateMiddle(f.name, 15) +
         "</span>" +
         (f.pk ? '<span class="pk-badge">PK</span>' : "") +
         '<span class="field-type">' +
