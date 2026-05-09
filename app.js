@@ -348,7 +348,7 @@ function highlightLine(line) {
     return out;
   }
 
-  var fieldMatch = raw.match(/^(\s*)(\w+)(\s+)(\w+)(.*)$/);
+  var fieldMatch = raw.match(/^(\s*)(\w+)(\s+)(\S+)(.*)$/);
   if (fieldMatch) {
     var fi = escapeHTML(fieldMatch[1]);
     var fname =
@@ -480,7 +480,7 @@ function parseERD(text) {
         continue;
       }
       if (currentEntity) {
-        var fm = trimmed.match(/^(\w+)\s+(\w+)(.*)?$/);
+        var fm = trimmed.match(/^(\w+)\s+(\S+)(.*)?$/);
         if (fm) {
           entities[currentEntity].fields.push({
             name: fm[1],
@@ -1525,6 +1525,20 @@ legend {
 
   var editor = document.getElementById("editor");
   editor.value = defaultText;
+
+  editor.addEventListener("keydown", function (e) {
+    if (e.key === "Tab") {
+      e.preventDefault();
+      var start = this.selectionStart;
+      var end = this.selectionEnd;
+      this.value =
+        this.value.substring(0, start) +
+        "  " +
+        this.value.substring(end);
+      this.selectionStart = this.selectionEnd = start + 2;
+      updateHighlight();
+    }
+  });
 
   editor.addEventListener("scroll", function () {
     document.getElementById("highlight").scrollTop = editor.scrollTop;
