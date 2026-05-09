@@ -809,3 +809,11 @@ body {
   color: var(--text-dim);
   font-style: italic;
 }
+
+#info-modal .tip {
+  background-color: var(--accent);
+  color: var(--text);
+  padding: 10px 20px;
+  border-radius: 10px;
+  font-size: 0.9rem;
+}

@@ -302,7 +302,7 @@
           <h3>Field Definition</h3>
           <pre>fieldName fieldType [pk]</pre>
           <p>
-            <small>Example: <code>id string pk</code></small>
+            <small>Example: <code>id bigInteger pk</code> or &nbsp;<code>geo_code string(10)</code></small>
           </p>
         </section>
 
@@ -359,10 +359,25 @@ title My Diagram</pre
         </section>
 
         <!-- Comments -->
-        <section>
-          <p>
-            <small><em>// Use double slashes for comments.</em></small>
-          </p>
+        <section class="tip">
+          <svg
+            xmlns="http://w3.org"
+            width="43"
+            height="43"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            style="float: left; margin-right: 20px"
+          >
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="16" x2="12" y2="12"></line>
+            <line x1="12" y1="8" x2="12.01" y2="8"></line>
+          </svg>
+          // Use double slashes for comments, and<br>
+          Use <code style="color: var(--text)">Tab</code> to Indent <strong>2 spaces</strong>
         </section>
       </div>
 

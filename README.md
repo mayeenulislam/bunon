@@ -78,7 +78,7 @@ fieldName fieldType [pk]
 ```
 
 - `fieldName` — column/field name
-- `fieldType` — data type (`string`, `number`, `timestamp`, etc.)
+- `fieldType` — data type, supports parenthesized parameters (e.g. `string(10)`, `varchar(255)`, `decimal(10,2)`)
 - `pk` (optional) — marks the field as Primary Key (shows a PK badge)
 
 ### Entity Metadata
@@ -159,6 +159,7 @@ users [icon: user] {
 | Zoom in/out | Ctrl/Cmd + Scroll wheel |
 | Zoom buttons | Toolbar +/− buttons |
 | Fit all entities | Fit button in toolbar |
+| Indent (editor) | Tab key inserts 2 spaces |
 | Drag entity | Click and drag an entity box |
 | Drag canvas | Click and drag empty space |
 | Toggle sidebar | Sidebar toggle button |

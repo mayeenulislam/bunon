@@ -1,24 +1,24 @@
 var defaultText = `users [icon: user, color: blue] {
-  id string pk
+  id bigInteger pk
   displayName string
   team_role string
   teams string
 }
 
 teams [icon: users, color: blue] {
-  id string pk
+  id bigInteger pk
   name string
 }
 
 workspaces [icon: home] {
-  id string
+  id bigInteger
   createdAt timestamp
   folderId string
   teamId string
 }
 
 folders [icon: folder] {
-  id string
+  id bigInteger
   name string
 }
 
@@ -1471,26 +1471,26 @@ function exportPNG() {
 
 (function () {
   defaultText = `users [icon: user, color: blue] {
-  id string pk
+  id bigInteger pk
   displayName string
   team_role string
   teams string
 }
 
 teams [icon: users, color: blue] {
-  id string pk
+  id bigInteger pk
   name string
 }
 
 workspaces [icon: home] {
-  id string
+  id bigInteger
   createdAt timestamp
   folderId string
   teamId string
 }
 
 folders [icon: folder] {
-  id string
+  id bigInteger
   name string
 }
 
