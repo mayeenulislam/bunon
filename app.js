@@ -976,6 +976,85 @@ function getFieldCenterY(entityName, fieldName) {
   return info.y + info.height / 2;
 }
 
+// Build an orthogonal elbow path string.
+// mx is the x-coordinate of the vertical segment (the "spine").
+function buildElbowPath(x1, y1, x2, y2, mx) {
+  var R = 8; // corner radius
+  if (Math.abs(y1 - y2) < 2) {
+    // Same row — straight horizontal line
+    return "M" + x1 + " " + y1 + " L" + x2 + " " + y2;
+  }
+  var goRight = x2 >= x1;
+  var goDown  = y2 > y1;
+  var hLen = Math.abs(mx - x1);
+  var vLen = Math.abs(y2 - y1);
+  var r = Math.min(R, hLen, vLen);
+  var hs = goRight ? 1 : -1;
+  var vs = goDown  ? 1 : -1;
+  return "M" + x1 + " " + y1
+    + " L" + (mx - hs * r) + " " + y1
+    + " Q" + mx + " " + y1 + " " + mx + " " + (y1 + vs * r)
+    + " L" + mx + " " + (y2 - vs * r)
+    + " Q" + mx + " " + y2 + " " + (mx + hs * r) + " " + y2
+    + " L" + x2 + " " + y2;
+}
+
+// Given a list of relationships, compute a per-relationship mx (vertical spine x)
+// so that lines sharing the same corridor (same left-edge and right-edge columns)
+// are spread apart and never overlap.
+function assignSpineX(relationships) {
+  var LANE_SPACING = 12; // px between parallel vertical segments
+
+  // Canonical corridor key: always put the smaller x first so A->B and B->A share a corridor
+  function corridorKey(fi, ti) {
+    var leftX  = Math.min(fi.x + fi.width, ti.x + ti.width, fi.x, ti.x);
+    var rightX = Math.max(fi.x + fi.width, ti.x + ti.width, fi.x, ti.x);
+    // Use the exit/entry edges rather than entity centres
+    var fromCX = fi.x + fi.width / 2;
+    var toCX   = ti.x + ti.width / 2;
+    var ex1 = fromCX <= toCX ? fi.x + fi.width : fi.x;
+    var ex2 = fromCX <= toCX ? ti.x            : ti.x + ti.width;
+    var lo = Math.min(ex1, ex2);
+    var hi = Math.max(ex1, ex2);
+    return lo + "_" + hi;
+  }
+
+  // First pass: group indices by corridor
+  var corridors = {}; // key -> [relIndex, ...]
+  relationships.forEach(function (rel, idx) {
+    var fi = entityElements[rel.fromTable];
+    var ti = entityElements[rel.toTable];
+    if (!fi || !ti) return;
+    var key = corridorKey(fi, ti);
+    if (!corridors[key]) corridors[key] = [];
+    corridors[key].push(idx);
+  });
+
+  // Second pass: assign mx for each relationship
+  var spines = new Array(relationships.length);
+  Object.keys(corridors).forEach(function (key) {
+    var group = corridors[key];
+    var n = group.length;
+    // Compute the natural midpoint mx for this corridor
+    var first = relationships[group[0]];
+    var fi = entityElements[first.fromTable];
+    var ti = entityElements[first.toTable];
+    var fromCX = fi.x + fi.width / 2;
+    var toCX   = ti.x + ti.width / 2;
+    var x1 = fromCX <= toCX ? fi.x + fi.width : fi.x;
+    var x2 = fromCX <= toCX ? ti.x            : ti.x + ti.width;
+    var baseMx = (x1 + x2) / 2;
+    // Spread: centre the fan around baseMx
+    var totalSpread = (n - 1) * LANE_SPACING;
+    var startOffset = -totalSpread / 2;
+    group.forEach(function (relIdx, i) {
+      spines[relIdx] = baseMx + startOffset + i * LANE_SPACING;
+    });
+  });
+
+  return spines;
+}
+
 function drawRelationships(relationships) {
   var svg = document.getElementById("lines-svg");
   var NS = "http://www.w3.org/2000/svg";
@@ -1004,7 +1083,10 @@ function drawRelationships(relationships) {
   );
   svg.appendChild(defs);
 
-  relationships.forEach(function (rel) {
+  // Compute per-relationship vertical spine positions to avoid overlap
+  var spines = assignSpineX(relationships);
+
+  relationships.forEach(function (rel, idx) {
     var fi = entityElements[rel.fromTable];
     var ti = entityElements[rel.toTable];
     if (!fi || !ti) return;
@@ -1017,10 +1099,6 @@ function drawRelationships(relationships) {
       toCX = ti.x + ti.width / 2;
     var x1 = fromCX <= toCX ? fi.x + fi.width : fi.x;
     var x2 = fromCX <= toCX ? ti.x : ti.x + ti.width;
-    var dx = Math.abs(x2 - x1);
-    var cp = Math.min(Math.max(dx * 0.5, 40), 180);
-    var cx1 = fromCX <= toCX ? x1 + cp : x1 - cp;
-    var cx2 = fromCX <= toCX ? x2 - cp : x2 + cp;
 
     var lineColor =
       rel.props && rel.props.color
@@ -1035,26 +1113,11 @@ function drawRelationships(relationships) {
                 : "#94a3b8"
         : "#94a3b8";
 
+    var mx = spines[idx] !== undefined ? spines[idx] : (x1 + x2) / 2;
+    var d = buildElbowPath(x1, y1, x2, y2, mx);
+
     var path = document.createElementNS(NS, "path");
-    path.setAttribute(
-      "d",
-      "M" +
-        x1 +
-        " " +
-        y1 +
-        " C" +
-        cx1 +
-        " " +
-        y1 +
-        "," +
-        cx2 +
-        " " +
-        y2 +
-        "," +
-        x2 +
-        " " +
-        y2,
-    );
+    path.setAttribute("d", d);
     path.setAttribute("stroke", lineColor);
     path.setAttribute("stroke-width", "1.5");
     path.setAttribute("fill", "none");
@@ -1272,7 +1335,10 @@ function exportPNG() {
   ctx.lineWidth = 1.5;
   ctx.lineCap = "round";
 
-  parsed.relationships.forEach(function (rel) {
+  // Compute spread spines for PNG export too
+  var pngSpines = assignSpineX(parsed.relationships);
+
+  parsed.relationships.forEach(function (rel, idx) {
     var fi = entityElements[rel.fromTable],
       ti = entityElements[rel.toTable];
     if (!fi || !ti) return;
@@ -1283,20 +1349,30 @@ function exportPNG() {
       toCX = ti.x + ti.width / 2;
     var x1 = fromCX <= toCX ? fi.x + fi.width : fi.x;
     var x2 = fromCX <= toCX ? ti.x : ti.x + ti.width;
-    var dx = Math.abs(x2 - x1),
-      cp = Math.min(Math.max(dx * 0.5, 40), 180);
-    var cx1 = fromCX <= toCX ? x1 + cp : x1 - cp;
-    var cx2 = fromCX <= toCX ? x2 - cp : x2 + cp;
+
+    var mx = pngSpines[idx] !== undefined ? pngSpines[idx] : (x1 + x2) / 2;
+
+    // Draw orthogonal elbow path on canvas (mirrors buildElbowPath)
+    var R = 8;
     ctx.beginPath();
-    ctx.moveTo(x1 - ox, y1 - oy);
-    ctx.bezierCurveTo(
-      cx1 - ox,
-      y1 - oy,
-      cx2 - ox,
-      y2 - oy,
-      x2 - ox,
-      y2 - oy,
-    );
+    if (Math.abs(y1 - y2) < 2) {
+      ctx.moveTo(x1 - ox, y1 - oy);
+      ctx.lineTo(x2 - ox, y2 - oy);
+    } else {
+      var goRight = x2 >= x1;
+      var goDown  = y2 > y1;
+      var hLen = Math.abs(mx - x1);
+      var vLen = Math.abs(y2 - y1);
+      var r = Math.min(R, hLen, vLen);
+      var hs = goRight ? 1 : -1;
+      var vs = goDown  ? 1 : -1;
+      ctx.moveTo(x1 - ox, y1 - oy);
+      ctx.lineTo((mx - hs * r) - ox, y1 - oy);
+      ctx.quadraticCurveTo(mx - ox, y1 - oy, mx - ox, (y1 + vs * r) - oy);
+      ctx.lineTo(mx - ox, (y2 - vs * r) - oy);
+      ctx.quadraticCurveTo(mx - ox, y2 - oy, (mx + hs * r) - ox, y2 - oy);
+      ctx.lineTo(x2 - ox, y2 - oy);
+    }
     ctx.stroke();
     function chevron(px, py, pr) {
       var s = 7,
