@@ -26,7 +26,7 @@ Built with the help of AI with human supervision and modification
 
 ### Easy: Download & Open
 
-1. Download the `index.html`
+1. Download the `index.html`, `app.css`, and `app.js` and place them in a single folder
 2. Open the `index.html` in any modern browser
 
 👍 It's ready!
@@ -193,7 +193,9 @@ Tested on Chrome, Firefox, Safari, and Edge (latest versions).
 
 ```
 erd/
-├── index.html          # Entire application (HTML + CSS + JS)
+├── index.html         # HTML
+├── app.css            # CSS
+├── app.js             # JS
 ├── logo.png           # Colored logo (browser tab)
 ├── logo-white.png     # White logo (toolbar)
 ├── fonts/             # Kohinoor Bangla font files (optional)
