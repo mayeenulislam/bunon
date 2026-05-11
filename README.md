@@ -1,4 +1,4 @@
-<img width="80" height="80" alt="Image" src="https://github.com/user-attachments/assets/ded0934d-8cc7-4e2e-890a-1f543ac09ead" />
+<img width="500" height="213" alt="Branding Logo of BŪNŌN — ERD Visualizer" src="branding.png" />
 
 # BŪNŌN — ERD Visualizer
 
@@ -34,12 +34,14 @@ Built with the help of AI with human supervision and modification
 ### Advanced: Git + Local Server
 
 1. Clone the repo:
+
    ```bash
    git clone https://github.com/yourusername/erd.git
    cd erd
    ```
 
 2. Open `index.html` in any modern browser:
+
    ```bash
    # macOS
    open index.html
@@ -62,6 +64,7 @@ EntityName [icon: iconname, color: colorname] {
 ```
 
 **Example:**
+
 ```
 users [icon: user, color: blue] {
   id string pk
@@ -105,6 +108,7 @@ fromTable.fromField <symbol> toTable.toField [: properties]
 | `<` | One to Many |
 
 **Examples:**
+
 ```
 users.teams <> teams.id
 workspaces.folderId > folders.id
@@ -112,6 +116,7 @@ invite.inviterId > users.id
 ```
 
 **Relationship Properties (optional):**
+
 ```
 users.teams <> teams.id [color: green]
 ```
@@ -181,6 +186,7 @@ All work is auto-saved to `localStorage` as you type and drag.
 ## Browser Support
 
 Any modern browser with support for:
+
 - Canvas API
 - `localStorage`
 - ES5+ JavaScript
@@ -188,23 +194,6 @@ Any modern browser with support for:
 - CSS Custom Properties
 
 Tested on Chrome, Firefox, Safari, and Edge (latest versions).
-
-## Project Structure
-
-```
-erd/
-├── index.html         # HTML
-├── app.css            # CSS
-├── app.js             # JS
-├── logo.png           # Colored logo (browser tab)
-├── logo-white.png     # White logo (toolbar)
-├── fonts/             # Kohinoor Bangla font files (optional)
-│   ├── KohinoorBangla-Regular.* 
-│   └── KohinoorBangla-Bold.*
-├── .gitignore
-├── README.md          # This file
-└── CONTRIBUTING.md    # Contribution guidelines
-```
 
 ## License
 
